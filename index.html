@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RED TEAM OPS v22 [Clickable MITRE Badges]</title>
+    <style>
+        :root {
+            --bg-dark: #090909;
+            --bg-panel: #111;
+            --bg-card: #161616;
+            --border: #2a2a2a;
+            
+            /* Killchain Colors */
+            --c-recon: #29b6f6;      /* Light Blue */
+            --c-access: #00e676;     /* Bright Green */
+            --c-privesc: #ffea00;    /* Bright Yellow */
+            --c-creds: #ff3d00;      /* Orange-Red */
+            --c-lateral: #d500f9;    /* Magenta/Purple */
+            --c-persist: #2979ff;    /* Blue/Indigo */
+            --c-evasion: #78909c;    /* Blue Gray */
+            
+            --font-ui: 'Segoe UI', system-ui, sans-serif;
+            --font-mono: 'Consolas', 'Roboto Mono', monospace;
+        }
+
+        * { box-sizing: border-box; outline: none; user-select: none; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        body {
+            margin: 0;
+            font-family: var(--font-ui);
+            background-color: var(--bg-dark);
+            color: #e0e0e0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- HEADER --- */
+        header {
+            height: 55px;
+            background: rgba(17, 17, 17, 0.98);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .brand {
+            font-weight: 800; font-size: 1.1rem; letter-spacing: 1px;
+            color: white; margin-right: 30px; display: flex; align-items: center; gap: 8px;
+        }
+        .brand span { color: var(--c-recon); }
+
+        .search-wrapper {
+            flex-grow: 1; max-width: 600px; position: relative; display: flex; align-items: center;
+        }
+        #searchInput {
+            width: 100%; background: #050505; border: 1px solid #333;
+            padding: 8px 30px 8px 12px; color: white; border-radius: 4px;
+            font-family: var(--font-mono); font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+        #searchInput:focus { border-color: var(--c-recon); }
+        
+        #searchClear {
+            position: absolute; right: 10px; color: #666; cursor: pointer; display: none;
+            font-size: 1.2rem;
+        }
+        #searchClear:hover { color: #fff; }
+
+        .header-actions {
+            margin-left: auto; display: flex; gap: 10px; align-items: center;
+        }
+        .file-status { font-size: 0.75rem; color: #666; margin-right: 10px; }
+        
+        .btn {
+            background: #222; border: 1px solid #333; color: #ccc;
+            padding: 6px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 0.75rem; font-weight: 600; transition: 0.2s;
+        }
+        .btn:hover { background: #333; color: white; border-color: #555; }
+        .btn-primary { background: rgba(41, 182, 246, 0.1); border-color: rgba(41, 182, 246, 0.3); color: var(--c-recon); }
+        .btn-primary:hover { background: var(--c-recon); color: #000; }
+        
+        .btn-danger { color: #ff1744; border-color: rgba(255, 23, 68, 0.3); }
+        .btn-danger:hover { background: #ff1744; color: white; }
+
+        /* --- KILLCHAIN TABS --- */
+        .killchain-bar {
+            background: #000;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            padding: 0 10px;
+            overflow-x: auto;
+            flex-shrink: 0;
+        }
+        
+        .kc-tab {
+            padding: 12px 20px;
+            font-size: 0.75rem; font-weight: 800; color: #666;
+            cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
+            transition: 0.2s; white-space: nowrap;
+            border-bottom: 3px solid transparent;
+        }
+        .kc-tab:hover { color: #fff; background: #111; }
+
+        /* Active States */
+        .kc-tab.active[data-ph="ALL"] { background: #333; color: white; border-bottom-color: #555; }
+        .kc-tab.active[data-ph="RECON"] { background: var(--c-recon); color: black; border-bottom-color: var(--c-recon); }
+        .kc-tab.active[data-ph="ACCESS"] { background: var(--c-access); color: black; border-bottom-color: var(--c-access); }
+        .kc-tab.active[data-ph="PRIVESC"] { background: var(--c-privesc); color: black; border-bottom-color: var(--c-privesc); }
+        .kc-tab.active[data-ph="CREDS"] { background: var(--c-creds); color: black; border-bottom-color: var(--c-creds); }
+        .kc-tab.active[data-ph="LATERAL"] { background: var(--c-lateral); color: white; border-bottom-color: var(--c-lateral); }
+        .kc-tab.active[data-ph="PERSIST"] { background: var(--c-persist); color: white; border-bottom-color: var(--c-persist); }
+        .kc-tab.active[data-ph="EVASION"] { background: var(--c-evasion); color: black; border-bottom-color: var(--c-evasion); }
+
+        /* --- TAG CLOUD --- */
+        .filter-panel {
+            background: #111;
+            border-bottom: 1px solid var(--border);
+            padding: 10px 20px;
+            max-height: 110px;
+            overflow-y: auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            flex-shrink: 0;
+            align-items: center;
+        }
+
+        .tag-pill {
+            font-size: 0.7rem; background: #1a1a1a; border: 1px solid #2a2a2a;
+            color: #888; padding: 3px 10px; border-radius: 4px; cursor: pointer;
+            display: flex; align-items: center; gap: 6px; transition: 0.1s;
+        }
+        .tag-pill span { font-size: 0.65rem; color: #555; font-weight: bold; }
+        .tag-pill:hover { border-color: #444; color: white; background: #222; }
+        .tag-pill.active { background: var(--c-recon); border-color: var(--c-recon); color: #000; }
+        .tag-pill.active span { color: #000; }
+
+        .stats-row {
+            padding: 4px 20px; background: #080808; border-bottom: 1px solid var(--border);
+            font-size: 0.75rem; color: #555; display: flex; justify-content: space-between; align-items: center;
+        }
+
+        /* --- GRID LAYOUT --- */
+        .workspace {
+            flex-grow: 1; padding: 20px; overflow-y: auto;
+            background: radial-gradient(circle at 50% 0%, #141414 0%, #090909 60%);
+            display: flex; flex-direction: column;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+            padding-bottom: 40px;
+        }
+        
+        .load-trigger { height: 20px; width: 100%; margin-top: 20px; }
+
+        /* --- CARD DESIGN --- */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            height: 200px;
+            display: flex; flex-direction: column;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            overflow: hidden;
+            border-left: 5px solid #333;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: #444;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            z-index: 2;
+        }
+
+        /* Phase Colors */
+        .card[data-phase="RECON"] { border-left-color: var(--c-recon); }
+        .card[data-phase="ACCESS"] { border-left-color: var(--c-access); }
+        .card[data-phase="PRIVESC"] { border-left-color: var(--c-privesc); }
+        .card[data-phase="CREDS"] { border-left-color: var(--c-creds); }
+        .card[data-phase="LATERAL"] { border-left-color: var(--c-lateral); }
+        .card[data-phase="PERSIST"] { border-left-color: var(--c-persist); }
+        .card[data-phase="EVASION"] { border-left-color: var(--c-evasion); }
+
+        /* Phase Text Colors */
+        .ph-text-RECON { color: var(--c-recon); }
+        .ph-text-ACCESS { color: var(--c-access); }
+        .ph-text-PRIVESC { color: var(--c-privesc); }
+        .ph-text-CREDS { color: var(--c-creds); }
+        .ph-text-LATERAL { color: var(--c-lateral); }
+        .ph-text-PERSIST { color: var(--c-persist); }
+        .ph-text-EVASION { color: var(--c-evasion); }
+
+        .card-head {
+            padding: 10px 12px;
+            display: flex; justify-content: space-between; align-items: start;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            background: rgba(255,255,255,0.01);
+        }
+        .phase-label {
+            font-size: 0.6rem; font-weight: 800; letter-spacing: 1px;
+            margin-bottom: 4px; text-transform: uppercase;
+        }
+        .card-title {
+            font-size: 0.95rem; font-weight: 700; color: #eee;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;
+        }
+        
+        /* ANIMATED MITRE BADGE STYLES */
+        .mitre-badge {
+            font-family: var(--font-mono); font-size: 0.65rem; color: #888;
+            border: 1px solid #444; padding: 1px 4px; border-radius: 2px;
+            background: #111; margin-left: 8px;
+            text-decoration: none; /* Removes link underline */
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            animation: badge-pulse 3s infinite; /* Gentle pulse */
+        }
+        
+        .mitre-badge:hover {
+            background: var(--c-recon); /* Cyber Cyan on hover */
+            color: #000;
+            border-color: var(--c-recon);
+            box-shadow: 0 0 8px var(--c-recon); /* Neon Glow */
+            transform: scale(1.05); /* Pop effect */
+            z-index: 10;
+        }
+
+        @keyframes badge-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(41, 182, 246, 0.1); }
+            50% { box-shadow: 0 0 0 2px rgba(41, 182, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(41, 182, 246, 0); }
+        }
+
+        .card-body {
+            padding: 10px 12px; flex-grow: 1; display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        .req-badge {
+            font-size: 0.65rem; font-weight: bold; color: #666;
+            margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .req-badge b { color: #bbb; }
+
+        .card-desc {
+            font-size: 0.75rem; color: #888; line-height: 1.4;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            overflow: hidden; margin-bottom: auto;
+        }
+
+        .code-preview {
+            background: #080808; border: 1px solid #222; padding: 6px;
+            border-radius: 3px; font-family: var(--font-mono); font-size: 0.7rem;
+            color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-top: 8px; position: relative; padding-right: 30px;
+        }
+
+        .btn-quick-copy {
+            position: absolute; right: 2px; top: 2px; bottom: 2px;
+            background: #222; border: 1px solid #333; color: white;
+            width: 24px; display: flex; align-items: center; justify-content: center;
+            border-radius: 3px; cursor: pointer;
+            opacity: 0.4; transition: opacity 0.2s, background 0.2s;
+        }
+        .btn-quick-copy:hover { background: var(--c-recon); border-color: var(--c-recon); color: black; opacity: 1; }
+
+        /* --- FOOTER & OPSEC LEVELS --- */
+        .card-foot {
+            padding: 6px 12px; background: #111; border-top: 1px solid #1f1f1f;
+            display: flex; gap: 4px; overflow: hidden; height: 32px; align-items: center;
+        }
+        .tags-wrapper { display: flex; gap: 4px; flex-grow: 1; overflow: hidden; }
+        .mini-tag {
+            font-size: 0.6rem; padding: 2px 6px; background: #1f1f1f;
+            color: #777; border-radius: 3px; border: 1px solid #2a2a2a; white-space: nowrap;
+        }
+        
+        .opsec-badge {
+            font-size: 0.6rem; font-weight: 700; padding: 2px 6px; 
+            border-radius: 3px; text-transform: uppercase; white-space: nowrap;
+            margin-left: auto; cursor: help;
+        }
+        .opsec-badge.high { background: rgba(255, 61, 0, 0.2); color: #ff3d00; border: 1px solid rgba(255, 61, 0, 0.3); }
+        .opsec-badge.mod { background: rgba(255, 145, 0, 0.15); color: #ff9100; border: 1px solid rgba(255, 145, 0, 0.3); }
+        .opsec-badge.safe { background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.3); }
+        .opsec-badge.unknown { background: #1f1f1f; color: #555; border: 1px solid #333; }
+
+        /* --- MODAL --- */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            z-index: 100; display: none; justify-content: center; align-items: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.open { display: flex; }
+
+        .modal-box {
+            width: 850px; height: 80vh; background: #141414;
+            border: 1px solid #333; border-radius: 6px;
+            display: flex; flex-direction: column;
+            box-shadow: 0 0 50px rgba(0,0,0,0.9);
+        }
+
+        .m-head {
+            padding: 20px; border-bottom: 1px solid #2a2a2a;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        
+        .m-nav {
+            display: flex; background: #0a0a0a; border-bottom: 1px solid #2a2a2a;
+        }
+        .m-tab {
+            padding: 12px 25px; font-size: 0.8rem; font-weight: bold; color: #666;
+            cursor: pointer; border-right: 1px solid #222;
+        }
+        .m-tab:hover { color: #fff; background: #111; }
+        .m-tab.active { background: var(--c-recon); color: black; }
+        .m-tab.active[data-target="defense"] { background: #ff1744; color: white; }
+
+        .m-content { padding: 25px; overflow-y: auto; flex-grow: 1; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        .big-code {
+            background: #050505; border: 1px solid #333; padding: 15px;
+            font-family: var(--font-mono); color: var(--c-access); font-size: 0.85rem;
+            white-space: pre-wrap; word-break: break-all; margin-bottom: 20px;
+        }
+
+        .opsec-warn {
+            border: 1px solid #ff1744; background: rgba(255, 23, 68, 0.1);
+            color: #ff8a80; padding: 10px; font-size: 0.8rem; margin-bottom: 15px;
+            display: flex; align-items: center; gap: 10px; border-radius: 4px;
+        }
+
+        .info-list { margin: 0; padding: 0; list-style: none; }
+        .info-list li { margin-bottom: 8px; font-size: 0.9rem; color: #aaa; }
+        .info-list li a { color: var(--c-recon); text-decoration: none; }
+        .info-list li a:hover { text-decoration: underline; }
+
+        .path-box {
+            font-family: var(--font-mono); font-size: 0.8rem; color: #888;
+            background: #111; padding: 4px 8px; margin-bottom: 4px; display: block;
+            border: 1px solid #222;
+        }
+
+        #dropOverlay {
+            position: fixed; inset: 0; background: rgba(41, 182, 246, 0.2);
+            z-index: 200; display: none; border: 4px dashed var(--c-recon);
+            justify-content: center; align-items: center; font-size: 2rem; 
+            font-weight: 900; color: white; pointer-events: none;
+        }
+        body.dragover #dropOverlay { display: flex; }
+        
+        .toast {
+            position: fixed; bottom: 30px; right: 30px;
+            background: var(--c-access); color: black; padding: 8px 16px;
+            font-weight: bold; border-radius: 4px; transform: translateY(100px);
+            transition: 0.3s; z-index: 500;
+        }
+        .toast.show { transform: translateY(0); }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="brand">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+        RED TEAM <span>OPS</span>
+    </div>
+    
+    <div class="search-wrapper">
+        <input type="text" id="searchInput" placeholder="Search (T1053, Mimikatz, Relay)...">
+        <span id="searchClear">&times;</span>
+    </div>
+
+    <div class="header-actions">
+        <span class="file-status" id="fileStatus">No DB loaded</span>
+        <button class="btn btn-danger" id="btnClear" style="display:none">CLEAR DB</button>
+        <input type="file" id="fileInput" multiple accept=".json" style="display:none">
+        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">LOAD DB</button>
+    </div>
+</header>
+
+<div class="killchain-bar" id="kcTabs">
+    <div class="kc-tab active" data-ph="ALL">All Ops</div>
+    <div class="kc-tab" data-ph="RECON">Recon</div>
+    <div class="kc-tab" data-ph="ACCESS">Initial Access</div>
+    <div class="kc-tab" data-ph="PRIVESC">Priv Esc</div>
+    <div class="kc-tab" data-ph="CREDS">Credentials</div>
+    <div class="kc-tab" data-ph="LATERAL">Lateral Move</div>
+    <div class="kc-tab" data-ph="PERSIST">Persistence</div>
+    <div class="kc-tab" data-ph="EVASION">Evasion</div>
+</div>
+
+<div class="filter-panel" id="tagCloud">
+    <span style="color:#444; font-size:0.8rem; width:100%; text-align:center;">Load JSON files to initialize matrix...</span>
+</div>
+
+<div class="stats-row">
+    <span id="statsLabel">0 vectors</span>
+    <span id="activeFiltersLabel">No filters active</span>
+</div>
+
+<div class="workspace">
+    <div class="grid" id="grid">
+        <div style="grid-column: 1 / -1; text-align: center; margin-top: 100px; color: #333;">
+            <h2>SYSTEM READY</h2>
+            <p>Drag & Drop JSON files or click LOAD DB</p>
+        </div>
+    </div>
+    <div class="load-trigger" id="loadSentinel"></div>
+</div>
+
+<div id="dropOverlay">DROP JSON HERE</div>
+
+<div class="modal-overlay" id="modal">
+    <div class="modal-box">
+        <div class="m-head">
+            <h2 style="margin:0; font-size:1.1rem; color:white;" id="mTitle">Tool Name</h2>
+            <button id="mClose" style="background:none; border:none; color:#666; font-size:1.5rem; cursor:pointer;">&times;</button>
+        </div>
+        <div class="m-nav">
+            <div class="m-tab active" data-target="attack" onclick="app.setTab('attack')">ATTACK VECTOR</div>
+            <div class="m-tab" data-target="defense" onclick="app.setTab('defense')">BLUE TEAM / DETECTION</div>
+        </div>
+        
+        <div class="m-content">
+            <div id="pane-attack" class="tab-pane active">
+                 <div class="req-badge" style="font-size:0.8rem; margin-bottom:10px;">PREREQUISITES: <b id="mReq" style="color:white">-</b></div>
+                 <div class="big-code" id="mCode"></div>
+                 <h4 style="color:#666; margin-bottom:5px; font-size:0.8rem;">DESCRIPTION</h4>
+                 <div id="mDesc" style="color:#ccc; line-height:1.6; font-size:0.9rem;"></div>
+                 <div id="mResSection" style="margin-top:20px; display:none;">
+                    <h4 style="color:#666; margin-bottom:5px; font-size:0.8rem;">RESOURCES / DOCS</h4>
+                    <ul class="info-list" id="mResources"></ul>
+                 </div>
+            </div>
+
+            <div id="pane-defense" class="tab-pane">
+                 <div id="mOpsec" class="opsec-warn" style="display:none">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm1 14h-2v2h2v-2zm0-6h-2v4h2v-4z"/></svg>
+                    <span id="mOpsecText"><b>HIGH NOISE LEVEL:</b> This technique writes to disk or generates prominent event logs.</span>
+                 </div>
+                 
+                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:20px;">
+                    <div>
+                        <div style="color:#666; font-size:0.75rem;">MITRE ATT&CK</div>
+                        <div id="mMitreLink" style="color:var(--c-recon); cursor:pointer; text-decoration:underline;">-</div>
+                    </div>
+                    <div>
+                        <div style="color:#666; font-size:0.75rem;">AUTHOR / SOURCE</div>
+                        <div id="mAuthor" style="color:white;">-</div>
+                    </div>
+                 </div>
+
+                 <div id="mPathSection" style="margin-bottom:20px; display:none;">
+                     <h4 style="color:#666; margin-bottom:5px; font-size:0.8rem;">KNOWN FILE PATHS</h4>
+                     <div id="mPaths"></div>
+                 </div>
+
+                 <h4 style="color:#666; margin-bottom:5px; font-size:0.8rem;">DETECTION RULES / IOCs</h4>
+                 <ul class="info-list" id="mDetList">
+                    <li>No specific signatures loaded.</li>
+                 </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast">COPIED</div>
+
+<script>
+class RedTeamApp {
+    constructor() {
+        this.data = [];
+        this.filtered = [];
+        this.displayedCount = 0;
+        this.BATCH_SIZE = 50; 
+        
+        this.phase = 'ALL';
+        this.tags = new Set();
+        
+        this.phaseMap = {
+            'RECON': 'RECONNAISSANCE',
+            'ACCESS': 'INITIAL ACCESS',
+            'PRIVESC': 'PRIVILEGE ESC',
+            'CREDS': 'CREDENTIALS',
+            'LATERAL': 'LATERAL MOVEMENT',
+            'PERSIST': 'PERSISTENCE',
+            'EVASION': 'DEFENSE EVASION'
+        };
+
+        this.ui = {
+            grid: document.getElementById('grid'),
+            sentinel: document.getElementById('loadSentinel'),
+            tags: document.getElementById('tagCloud'),
+            search: document.getElementById('searchInput'),
+            clearSearch: document.getElementById('searchClear'),
+            stats: document.getElementById('statsLabel'),
+            fileStatus: document.getElementById('fileStatus'),
+            modal: document.getElementById('modal'),
+            toast: document.getElementById('toast'),
+            btnClear: document.getElementById('btnClear')
+        };
+        
+        this.init();
+    }
+
+    init() {
+        document.body.ondragover = e => { e.preventDefault(); document.body.classList.add('dragover'); };
+        document.body.ondragleave = () => document.body.classList.remove('dragover');
+        document.body.ondrop = e => { e.preventDefault(); document.body.classList.remove('dragover'); this.loadFiles(e.dataTransfer.files); };
+
+        document.getElementById('fileInput').onchange = e => this.loadFiles(e.target.files);
+
+        this.ui.btnClear.onclick = () => {
+            this.data = [];
+            this.filtered = [];
+            this.tags.clear();
+            this.ui.fileStatus.textContent = "No DB loaded";
+            this.ui.btnClear.style.display = 'none';
+            this.applyFilters();
+        };
+
+        this.ui.search.oninput = () => {
+            this.ui.clearSearch.style.display = this.ui.search.value ? 'block' : 'none';
+            this.debounce(() => this.applyFilters(), 300)();
+        };
+
+        this.ui.clearSearch.onclick = () => {
+            this.ui.search.value = '';
+            this.ui.clearSearch.style.display = 'none';
+            this.applyFilters();
+        };
+
+        document.querySelectorAll('.kc-tab').forEach(t => {
+            t.onclick = () => {
+                document.querySelectorAll('.kc-tab').forEach(x => x.classList.remove('active'));
+                t.classList.add('active');
+                this.phase = t.dataset.ph;
+                this.applyFilters(); 
+            };
+        });
+
+        document.getElementById('mClose').onclick = () => this.ui.modal.classList.remove('open');
+        this.ui.modal.onclick = e => { if(e.target === this.ui.modal) this.ui.modal.classList.remove('open'); };
+        document.onkeydown = e => { if(e.key === 'Escape') this.ui.modal.classList.remove('open'); };
+
+        this.observer = new IntersectionObserver((entries) => {
+            if(entries[0].isIntersecting) {
+                this.renderNextBatch();
+            }
+        }, { root: this.ui.workspace, rootMargin: '100px' });
+    }
+
+    debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    async loadFiles(files) {
+        const promises = Array.from(files)
+            .filter(f => f.name.endsWith('.json'))
+            .map(f => new Promise(resolve => {
+                const r = new FileReader();
+                r.onload = e => {
+                    try { resolve(this.normalize(JSON.parse(e.target.result), f.name)); } 
+                    catch (err) { console.error(f.name, err); resolve([]); }
+                };
+                r.readAsText(f);
+            }));
+
+        const res = await Promise.all(promises);
+        const newItems = res.flat();
+        
+        if (newItems.length > 0) {
+            this.data = [...this.data, ...newItems];
+            this.ui.fileStatus.textContent = `${this.data.length} vectors loaded`;
+            this.ui.btnClear.style.display = 'inline-block';
+            this.applyFilters();
+        }
+    }
+
+    normalize(json, fname) {
+        const list = Array.isArray(json) ? json : [json];
+        const src = fname.replace('.json','');
+        let out = [];
+
+        // OpSec Keywords
+        const highRisk = [
+            'mimikatz', 'rubeus', 'psexec', 'kekeo', 'nxc', 'netexec', 'procdump', 'lsassy', 
+            'certipy', 'safetykatz', 'lazagne', 'secretsdump', 'sharp', 'powercat', 
+            'petitpotam', 'printerbug', 'coercer', 'responder', 'mitm6', 'dnstool', 'ntlmrelayx', 'krbrelayx',
+            'disk', 'upload', 'save', 'service', 'schtasks', 'reg ', 'add user', 'create', 'event log',
+            'dcsync', 'shadow credentials', 'write dacl', 'write owner', 'poison', 'relay', 'coerce', 
+            'kerberoast', 'asreproast', 'ntds.dit', 'lsass'
+        ];
+        const medRisk = [
+            'powershell', 'cmd', 'winrm', 'wmi', 'exec', 'run', 'inject', 'script', 
+            'nmap', 'bloodhound', 'sharphound', 'spray', 'brute', 'scanner'
+        ];
+        const lowRisk = ['enum', 'query', 'list', 'read', 'recon', 'ticket', 'token', 'memory'];
+
+        list.forEach(item => {
+            const commandList = item.Commands || [item];
+            
+            commandList.forEach(cmdObj => {
+                const cmd = cmdObj.Command || item.command || item.cmd || item.code;
+                if(!cmd) return;
+
+                const toolName = cmdObj.Name || item.Name || item.tool || item.attack_type || src;
+                const rawText = (JSON.stringify(item) + JSON.stringify(cmdObj)).toLowerCase();
+                
+                // MITRE
+                let mitre = cmdObj.MitreID || item.MitreID || item.mitre || '';
+                if (!mitre) {
+                    const m = rawText.match(/t\d{4}(\.\d{3})?/);
+                    if (m) mitre = m[0].toUpperCase();
+                }
+
+                let req = cmdObj.Privileges || item.Privileges || item.req || item.condition;
+                if(!req || req === "Persistence" || req === "Recon" || req.length > 30) { 
+                     if(rawText.includes('admin') || rawText.includes('elevated') || rawText.includes('system')) req = "Admin/System";
+                     else if(rawText.includes('user')) req = "User";
+                     else req = "Generic";
+                }
+
+                // Phase
+                let ph = (cmdObj.kill_chain_phase || item.kill_chain_phase || 'DEFAULT').toUpperCase();
+                if(cmdObj.Category) {
+                    const cat = cmdObj.Category.toLowerCase();
+                    if(cat.includes('awl') || cat.includes('ads') || cat.includes('encode') || cat.includes('decode') || cat.includes('tamper') || cat.includes('conceal')) ph = 'EVASION';
+                    else if(cat.includes('dump') || cat.includes('credentials')) ph = 'CREDS';
+                    else if(cat.includes('recon')) ph = 'RECON';
+                    else if(cat.includes('download') || cat.includes('upload') || cat.includes('copy')) ph = 'ACCESS';
+                }
+                
+                // Forced Phase Overrides
+                if ((item.condition && item.condition.toLowerCase().includes('persistence')) || fname.toLowerCase().includes('persistence')) ph = 'PERSIST';
+                else if ((item.condition && item.condition.toLowerCase().includes('lateral move')) || fname.toLowerCase().includes('lateral move')) ph = 'LATERAL';
+                else if (ph === 'DEFAULT') {
+                    if(mitre.startsWith('T1078') || rawText.includes('access') || rawText.includes('download')) ph = 'ACCESS';
+                    else if(rawText.includes('recon') || rawText.includes('enumerat') || rawText.includes('discovery')) ph = 'RECON';
+                    else if(rawText.includes('privilege') || rawText.includes('bypass') || rawText.includes('uac')) ph = 'PRIVESC';
+                    else if(rawText.includes('credential') || rawText.includes('dump') || rawText.includes('lsass')) ph = 'CREDS';
+                    else if(rawText.includes('lateral') || rawText.includes('remote') || rawText.includes('psexec')) ph = 'LATERAL';
+                    else if(rawText.includes('persist') || rawText.includes('schedule') || rawText.includes('autostart')) ph = 'PERSIST';
+                    else if(rawText.includes('evasion') || rawText.includes('hide')) ph = 'EVASION';
+                    else ph = 'ACCESS';
+                }
+                if(ph === 'PERSISTENCE') ph = 'PERSIST';
+
+                // OpSec Analysis (Refined v21)
+                let opsecLevel = "unknown";
+                let trigger = "";
+
+                // Check High Risk
+                const foundHigh = highRisk.find(w => rawText.includes(w));
+                if (foundHigh) {
+                    opsecLevel = "high";
+                    trigger = foundHigh;
+                } 
+                // Check Moderate Risk
+                else {
+                    const foundMed = medRisk.find(w => rawText.includes(w));
+                    if (foundMed) {
+                         opsecLevel = "mod";
+                         trigger = foundMed;
+                    } 
+                    // Check Low/Safe
+                    else {
+                        const foundLow = lowRisk.find(w => rawText.includes(w));
+                        if (foundLow) {
+                            opsecLevel = "safe";
+                            trigger = foundLow;
+                        }
+                    }
+                }
+                
+                // Special handling for PowerShell cradles
+                if(rawText.includes('downloadstring') || rawText.includes('iex')) {
+                    opsecLevel = "high";
+                    trigger = "ps-download";
+                }
+
+                const isNoisy = (opsecLevel === 'high');
+
+                // Tag Flattening
+                let combinedTags = [...(item.Tags||[]), ...(cmdObj.Tags||[])];
+                let flatTags = [];
+                combinedTags.forEach(t => {
+                    if(typeof t === 'string') flatTags.push(t);
+                    else if(typeof t === 'object') flatTags.push(...Object.keys(t), ...Object.values(t));
+                });
+                flatTags.push(src); 
+
+                out.push({
+                    id: Math.random().toString(36),
+                    title: toolName,
+                    cmd: cmd,
+                    desc: cmdObj.Description || item.Description || item.critical_note || '',
+                    mitre: mitre,
+                    tags: flatTags,
+                    author: item.Author || cmdObj.Author || 'Unknown',
+                    req: req,
+                    phase: ph,
+                    isNoisy: isNoisy,
+                    opsecLevel: opsecLevel,
+                    opsecTrigger: trigger,
+                    detection: item.Detection || cmdObj.Detection || [],
+                    resources: item.Resources || [],
+                    paths: item.Full_Path || []
+                });
+            });
+        });
+        return out;
+    }
+
+    applyFilters() {
+        const q = this.ui.search.value.toLowerCase();
+        const matchesSearch = (item) => !q || (item.title + item.cmd + item.desc + item.mitre).toLowerCase().includes(q);
+
+        this.filtered = this.data.filter(d => {
+            if(this.phase !== 'ALL' && d.phase !== this.phase) return false;
+            if(!matchesSearch(d)) return false;
+            if(this.tags.size > 0 && !Array.from(this.tags).some(t => d.tags.includes(t))) return false;
+            return true;
+        });
+
+        this.updateTagCloud();
+        
+        this.ui.stats.innerHTML = `<span style="color:var(--c-access); font-weight:bold; font-size: 0.9rem;">${this.filtered.length}</span> <span style="color:#666;">/ ${this.data.length} Vectors</span>`;
+        
+        this.ui.grid.innerHTML = '';
+        this.displayedCount = 0;
+        this.observer.disconnect(); 
+        
+        if (this.filtered.length === 0) {
+            this.ui.grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; margin-top:50px; color:#555;">No vectors found.</div>`;
+            return;
+        }
+
+        this.ui.grid.appendChild(this.ui.sentinel);
+        this.observer.observe(this.ui.sentinel);
+        this.renderNextBatch();
+    }
+
+    renderNextBatch() {
+        if (this.displayedCount >= this.filtered.length) return;
+
+        const batch = this.filtered.slice(this.displayedCount, this.displayedCount + this.BATCH_SIZE);
+        const frag = document.createDocumentFragment();
+
+        batch.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'card';
+            el.dataset.phase = item.phase;
+            
+            const tags = item.tags.slice(0,2).map(t => `<span class="mini-tag">${this.escapeHtml(t)}</span>`).join('');
+            const phaseName = this.phaseMap[item.phase] || item.phase;
+            const phaseClass = `ph-text-${item.phase}`;
+            
+            let badgeHtml = '';
+            let tooltip = item.opsecTrigger ? `title="Trigger: ${item.opsecTrigger}"` : '';
+            
+            if(item.opsecLevel === 'high') badgeHtml = `<span class="opsec-badge high" ${tooltip}>HIGH NOISE</span>`;
+            else if (item.opsecLevel === 'mod') badgeHtml = `<span class="opsec-badge mod" ${tooltip}>MODERATE</span>`;
+            else if (item.opsecLevel === 'safe') badgeHtml = `<span class="opsec-badge safe" ${tooltip}>OPSEC SAFE</span>`;
+            else badgeHtml = `<span class="opsec-badge unknown">OPSEC: N/A</span>`;
+
+            // MITRE Link generation (v22)
+            let mitreHtml = '';
+            if(item.mitre) {
+                // Convert T1059.001 to T1059/001 for URL
+                const mitreUrl = `https://attack.mitre.org/techniques/${item.mitre.replace('.', '/')}`;
+                mitreHtml = `<a href="${mitreUrl}" target="_blank" class="mitre-badge">${item.mitre}</a>`;
+            }
+
+            el.innerHTML = `
+                <div class="card-head">
+                    <div style="display:flex; flex-direction:column; width:100%; overflow:hidden;">
+                        <div class="phase-label ${phaseClass}">${phaseName}</div>
+                        <div class="card-title" title="${this.escapeHtml(item.title)}">${this.escapeHtml(item.title)}</div>
+                    </div>
+                    ${mitreHtml}
+                </div>
+                <div class="card-body">
+                    <div class="req-badge">REQ: <b>${this.escapeHtml(item.req)}</b></div>
+                    <div class="card-desc">${this.escapeHtml(item.desc)}</div>
+                    <div class="code-preview">
+                        ${this.escapeHtml(item.cmd)}
+                        <div class="btn-quick-copy" title="Copy">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-foot">
+                    <div class="tags-wrapper">${tags}</div>
+                    ${badgeHtml}
+                </div>
+            `;
+            
+            el.onclick = (e) => {
+                // Prevent modal opening if clicking the MITRE link or copy button
+                if(e.target.closest('.mitre-badge')) return;
+                if(e.target.closest('.btn-quick-copy')) {
+                    this.copy(item.cmd);
+                    return;
+                }
+                this.openModal(item);
+            };
+            frag.appendChild(el);
+        });
+
+        this.ui.grid.insertBefore(frag, this.ui.sentinel);
+        this.displayedCount += batch.length;
+    }
+
+    updateTagCloud() {
+        const counts = {};
+        const scope = this.data.filter(d => 
+             (this.phase === 'ALL' || d.phase === this.phase) &&
+             (!this.ui.search.value || (d.title+d.cmd).toLowerCase().includes(this.ui.search.value.toLowerCase()))
+        );
+
+        scope.forEach(d => d.tags.forEach(t => counts[t] = (counts[t] || 0) + 1));
+        
+        this.ui.tags.innerHTML = '';
+        if(this.tags.size > 0) {
+             const rst = document.createElement('div');
+             rst.className = 'tag-pill';
+             rst.style.borderColor = '#444';
+             rst.innerHTML = `RESET (${this.tags.size})`;
+             rst.onclick = () => { this.tags.clear(); this.applyFilters(); };
+             this.ui.tags.appendChild(rst);
+        }
+
+        Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,50).forEach(([tag, c]) => {
+            const el = document.createElement('div');
+            el.className = 'tag-pill';
+            if(this.tags.has(tag)) el.classList.add('active');
+            el.innerHTML = `${this.escapeHtml(tag)} <span>${c}</span>`;
+            el.onclick = () => {
+                if(this.tags.has(tag)) this.tags.delete(tag);
+                else this.tags.add(tag);
+                this.applyFilters();
+            };
+            this.ui.tags.appendChild(el);
+        });
+    }
+
+    openModal(item) {
+        document.getElementById('mTitle').textContent = item.title;
+        document.getElementById('mCode').textContent = item.cmd;
+        document.getElementById('mDesc').textContent = item.desc;
+        document.getElementById('mReq').textContent = item.req;
+        document.getElementById('mAuthor').textContent = item.author;
+        
+        const resBox = document.getElementById('mResSection');
+        const resList = document.getElementById('mResources');
+        resList.innerHTML = '';
+        if(item.resources && item.resources.length > 0) {
+            resBox.style.display = 'block';
+            item.resources.forEach(r => {
+                const li = document.createElement('li');
+                li.innerHTML = `<a href="${r.Link || r.url}" target="_blank">${this.escapeHtml(r.Link || "Reference Link")}</a>`;
+                resList.appendChild(li);
+            });
+        } else {
+            resBox.style.display = 'none';
+        }
+
+        const opsec = document.getElementById('mOpsec');
+        const opsecText = document.getElementById('mOpsecText');
+        
+        opsec.style.display = 'flex';
+        if(item.opsecLevel === 'high') {
+            opsec.style.borderColor = '#ff1744'; opsec.style.background = 'rgba(255, 23, 68, 0.1)'; opsec.style.color = '#ff8a80';
+            opsecText.innerHTML = `<b>HIGH NOISE:</b> Triggered by keyword "<b>${item.opsecTrigger}</b>".<br>Writes to disk, modifies system state, or known malicious tool.`;
+        } else if (item.opsecLevel === 'mod') {
+            opsec.style.borderColor = '#ff9100'; opsec.style.background = 'rgba(255, 145, 0, 0.1)'; opsec.style.color = '#ffb74d';
+            opsecText.innerHTML = `<b>MODERATE NOISE:</b> Triggered by keyword "<b>${item.opsecTrigger}</b>".<br>Active execution or network traffic. May be detected by AMSI/EDR.`;
+        } else if (item.opsecLevel === 'safe') {
+            opsec.style.borderColor = '#00e676'; opsec.style.background = 'rgba(0, 230, 118, 0.1)'; opsec.style.color = '#69f0ae';
+            opsecText.innerHTML = `<b>OPSEC SAFE:</b> Triggered by keyword "<b>${item.opsecTrigger}</b>".<br>Likely passive enumeration or legitimate admin action.`;
+        } else {
+            opsec.style.display = 'none';
+        }
+        
+        const mitreLink = document.getElementById('mMitreLink');
+        mitreLink.textContent = item.mitre || 'N/A';
+        mitreLink.onclick = () => {
+             if(item.mitre) window.open(`https://attack.mitre.org/techniques/${item.mitre.replace('.', '/')}`, '_blank');
+        };
+
+        const pathBox = document.getElementById('mPathSection');
+        const pathDiv = document.getElementById('mPaths');
+        pathDiv.innerHTML = '';
+        if(item.paths && item.paths.length > 0) {
+            pathBox.style.display = 'block';
+            item.paths.forEach(p => {
+                const span = document.createElement('span');
+                span.className = 'path-box';
+                span.textContent = p.Path || p;
+                pathDiv.appendChild(span);
+            });
+        } else {
+            pathBox.style.display = 'none';
+        }
+
+        const detList = document.getElementById('mDetList');
+        detList.innerHTML = '';
+        if(item.detection && item.detection.length) {
+            item.detection.forEach(d => {
+                const li = document.createElement('li');
+                if(d.Sigma) {
+                     li.innerHTML = `<a href="${d.Sigma}" target="_blank" style="color:var(--c-recon)">Sigma Rule</a>`;
+                } else if(d.IOC) {
+                     li.textContent = "IOC: " + d.IOC;
+                } else {
+                     li.textContent = JSON.stringify(d);
+                }
+                detList.appendChild(li);
+            });
+        } else detList.innerHTML = '<li>No specific signatures loaded.</li>';
+
+        this.setTab('attack'); 
+        this.ui.modal.classList.add('open');
+    }
+
+    setTab(target) {
+        document.querySelectorAll('.m-tab').forEach(t => t.classList.remove('active'));
+        document.querySelector(`.m-tab[data-target="${target}"]`).classList.add('active');
+        
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        document.getElementById(`pane-${target}`).classList.add('active');
+    }
+
+    copy(text) {
+        navigator.clipboard.writeText(text);
+        const t = this.ui.toast;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 1500);
+    }
+    
+    escapeHtml(str) {
+        if(!str) return '';
+        if(typeof str !== 'string') return String(str);
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+}
+
+const app = new RedTeamApp();
+</script>
+</body>
+</html>
