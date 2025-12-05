@@ -1,0 +1,152 @@
+[
+  {
+    "condition": "Crack hash",
+    "attack_type": "LM",
+    "tool": "John the Ripper",
+    "req": "hash.txt (LM hash), wordlist (rockyou.txt)",
+    "command": "john --format=lm hash.txt --wordlist=<rockyou.txt>",
+    "profit": "Cleartext Password",
+    "critical_note": "Пример хеша: 299bd128c1101fd6",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Crack hash",
+    "attack_type": "LM",
+    "tool": "Hashcat",
+    "req": "hash.txt (LM hash), wordlist (rockyou.txt)",
+    "command": "hashcat -m 3000 -a 0 hash.txt <rockyou.txt>",
+    "profit": "Cleartext Password",
+    "critical_note": "Mode 3000. Пример хеша: 299bd128c1101fd6",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Crack hash",
+    "attack_type": "NT",
+    "tool": "John the Ripper",
+    "req": "hash.txt (NT hash), wordlist (rockyou.txt)",
+    "command": "john --format=nt hash.txt --wordlist=<rockyou.txt>",
+    "profit": "Cleartext Password",
+    "critical_note": "Пример хеша: b4b9b02e6f09a9bd760...",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Crack hash",
+    "attack_type": "NT",
+    "tool": "Hashcat",
+    "req": "hash.txt (NT hash), wordlist (rockyou.txt)",
+    "command": "hashcat -m 1000 -a 0 hash.txt <rockyou.txt>",
+    "profit": "Cleartext Password",
+    "critical_note": "Mode 1000. Пример хеша: b4b9b02e6f09a9bd760...",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Crack hash",
+    "attack_type": "NTLMv1",
+    "tool": "John the Ripper",
+    "req": "hash.txt (NTLMv1), wordlist (rockyou.txt)",
+    "command": "john --format=netntlm hash.txt --wordlist=<rockyou.txt>",
+    "profit": "Cleartext Password",
+    "critical_note": "Пример: user::85D5BC...",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Crack hash",
+    "attack_type": "NTLMv1",
+    "tool": "Hashcat",
+    "req": "hash.txt (NTLMv1), wordlist (rockyou.txt)",
+    "command": "hashcat -m 1000 -a 0 hash.txt <rockyou.txt>",
+    "profit": "Cleartext Password",
+    "critical_note": "Согласно схеме используется Mode 1000. Альтернативный инструмент: crack.sh",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Crack hash",
+    "attack_type": "NTLMv2",
+    "tool": "John the Ripper",
+    "req": "hash.txt (NTLMv2), wordlist (rockyou.txt)",
+    "command": "john --format=netntlmv2 hash.txt --wordlist=<rockyou.txt>",
+    "profit": "Cleartext Password",
+    "critical_note": "Пример: user::N46iSNek...",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Crack hash",
+    "attack_type": "NTLMv2",
+    "tool": "Hashcat",
+    "req": "hash.txt (NTLMv2), wordlist (rockyou.txt)",
+    "command": "hashcat -m 5600 -a 0 hash.txt <rockyou.txt>",
+    "profit": "Cleartext Password",
+    "critical_note": "Mode 5600. Пример: user::N46iSNek...",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Crack hash",
+    "attack_type": "Kerberos 5 TGS",
+    "tool": "John the Ripper",
+    "req": "hash.txt (KRB5TGS), wordlist (rockyou.txt)",
+    "command": "john --format=krb5tgs hash.txt --wordlist=<rockyou.txt>",
+    "profit": "Cleartext Password",
+    "critical_note": "Пример: $krb5tgs$23$...",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Crack hash",
+    "attack_type": "Kerberos 5 TGS",
+    "tool": "Hashcat",
+    "req": "hash.txt (KRB5TGS), wordlist (rockyou.txt)",
+    "command": "hashcat -m 13100 -a 0 hash.txt <rockyou.txt>",
+    "profit": "Cleartext Password",
+    "critical_note": "Mode 13100. Пример: $krb5tgs$23$...",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Crack hash",
+    "attack_type": "Kerberos 5 TGS AES128",
+    "tool": "Hashcat",
+    "req": "hash.txt (AES128), wordlist (rockyou.txt)",
+    "command": "hashcat -m 19600 -a 0 hash.txt <rockyou.txt>",
+    "profit": "Cleartext Password",
+    "critical_note": "Mode 19600. Пример: $krb5tgs$17...",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Crack hash",
+    "attack_type": "Kerberos ASREP",
+    "tool": "Hashcat",
+    "req": "hash.txt (ASREP), wordlist (rockyou.txt)",
+    "command": "hashcat -m 18200 -a 0 hash.txt <rockyou.txt>",
+    "profit": "Cleartext Password",
+    "critical_note": "Mode 18200. Пример: $krb5asrep$23...",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Crack hash",
+    "attack_type": "MSCache 2",
+    "tool": "Hashcat",
+    "req": "hash.txt (DCC2), wordlist (rockyou.txt)",
+    "command": "hashcat -m 2100 -a 0 hash.txt <rockyou.txt>",
+    "profit": "Cleartext Password",
+    "critical_note": "Mode 2100. Very slow. Пример: $DCC2$10240...",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Crack hash",
+    "attack_type": "Timeroast hash",
+    "tool": "Hashcat",
+    "req": "hash.txt (SNTP-MS), Brute-force mask",
+    "command": "hashcat -m 31300 -a 3 hash.txt -w 3 ?l?l?l?l?l?l?l",
+    "profit": "Cleartext Password",
+    "critical_note": "Mode 31300. Атака по маске (?l - lowercase). Пример: $sntp-ms$...",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Crack hash",
+    "attack_type": "pxe hash",
+    "tool": "Hashcat",
+    "req": "hash.txt (SCCM), wordlist (rockyou.txt)",
+    "command": "hashcat -m 19850 -a 0 hash.txt <rockyou.txt>",
+    "profit": "Cleartext Password",
+    "critical_note": "Mode 19850. Пример: $sccm$aes128$...",
+    "kill_chain_phase": "ACCESS"
+  }
+]

